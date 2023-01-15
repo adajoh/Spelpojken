@@ -1,6 +1,6 @@
 # Spelpojken a Game Boy emulator
 
-![Alt Text](https://github.com/adajoh/Spelpojken/raw/master/spelpojken.gif)
+![Alt Text](https://github.com/adajoh/Spelpojken/blob/main/spelpojken.gif)
 
 
 
