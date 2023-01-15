@@ -1,0 +1,26 @@
+
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+
+repositories {
+	mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    jcenter()
+   	maven {
+   	 	url "https://plugins.gradle.org/m2/"
+    }
+}
+
+ext {
+   	gdxVersion = '1.9.7'
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:21.0'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.5'
+    implementation 'junit:junit:4.12'
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
