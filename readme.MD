@@ -4,7 +4,7 @@
 
 
 
-This is just for fun and not well researched and the bit manupilation handling can be improved a lot.
+This is just for fun and not well researched and the bit manipulation handling can be improved a lot.
 It can display the logo from the boot rom but does not seem to able to get much further into any game.
 
 
