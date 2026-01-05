@@ -302,7 +302,7 @@ public class Opcodes {
 				interrupts.setHalted(true);
 			}
 		});
-		opcodes[0x77] = create("LD (HL),A", 8, 1, () -> cpu.rom[cpu.get16BitRegister("HL")] = cpu.a);
+		opcodes[0x77] = create("LD (HL),A", 8, 1, () -> cpu.setMem(cpu.get16BitRegister("HL"), cpu.a));
 		opcodes[0x78] = create("LD A,B", 4, 1, () -> cpu.a = cpu.b);
 		opcodes[0x79] = create("LD A,C", 4, 1, () -> cpu.a = cpu.c);
 		opcodes[0x7A] = create("LD A,D", 4, 1, () -> cpu.a = cpu.d);
@@ -524,11 +524,11 @@ public class Opcodes {
 
 		// 0xE0 - 0xEF
 		opcodes[0xE0] = create("LDH (a8),A", 12, 2, () -> {
-			cpu.rom[0xFF00 + cpu.rom[cpu.pc + 1]] = cpu.a;
+			cpu.setMem(0xFF00 + cpu.getMem(cpu.pc + 1), cpu.a);
 		});
 		opcodes[0xE1] = create("POP HL", 12, 1, () -> cpu.set16BitRegister("H", "L", cpu.pop()));
 		opcodes[0xE2] = create("LD (C),A", 8, 1, () -> {
-			cpu.rom[0xFF00 + cpu.c] = cpu.a;
+			cpu.setMem(0xFF00 + cpu.c, cpu.a);
 		});
 		opcodes[0xE3] = create("ILLEGAL_E3", 4, 1, () -> {});
 		opcodes[0xE4] = create("ILLEGAL_E4", 4, 1, () -> {});
@@ -539,7 +539,7 @@ public class Opcodes {
 			cpu.pc = 0x20;
 		});
 		opcodes[0xE8] = create("ADD SP,r8", 16, 2, () -> {
-			byte n = (byte) cpu.rom[cpu.pc + 1];
+			byte n = (byte) cpu.getMem(cpu.pc + 1);
 			int result = cpu.sp + n;
 			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
 			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
@@ -551,7 +551,7 @@ public class Opcodes {
 			cpu.pc = cpu.get16BitRegister("HL");
 		});
 		opcodes[0xEA] = create("LD (a16),A", 16, 3, () -> {
-			cpu.rom[cpu.get16bitValue(cpu.pc + 1)] = cpu.a;
+			cpu.setMem(cpu.get16bitValue(cpu.pc + 1), cpu.a);
 		});
 		opcodes[0xEB] = create("ILLEGAL_EB", 4, 1, () -> {});
 		opcodes[0xEC] = create("ILLEGAL_EC", 4, 1, () -> {});
@@ -562,15 +562,15 @@ public class Opcodes {
 			cpu.pc = 0x28;
 		});
 
-		// 0xF0 - 0xFF
+		// 0x100 - 0x10F
 		opcodes[0xF0] = create("LDH A,(a8)", 12, 2, () -> {
-			cpu.a = cpu.rom[0xFF00 + cpu.rom[cpu.pc + 1]];
+			cpu.a = cpu.getMem(0xFF00 + cpu.getMem(cpu.pc + 1));
 		});
 		opcodes[0xF1] = create("POP AF", 12, 1, () -> {
 			cpu.set16BitRegister("A", "F", cpu.pop() & 0xFFF0);
 		});
 		opcodes[0xF2] = create("LD A,(C)", 8, 1, () -> {
-			cpu.a = cpu.rom[0xFF00 + cpu.c];
+			cpu.a = cpu.getMem(0xFF00 + cpu.c);
 		});
 		opcodes[0xF3] = create("DI", 4, 1, () -> {
 			if (interrupts != null) {
@@ -593,7 +593,7 @@ public class Opcodes {
 			cpu.pc = 0x30;
 		});
 		opcodes[0xF8] = create("LD HL,SP+r8", 12, 2, () -> {
-			byte n = (byte) cpu.rom[cpu.pc + 1];
+			byte n = (byte) cpu.getMem(cpu.pc + 1);
 			int result = cpu.sp + n;
 			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
 			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
@@ -614,7 +614,7 @@ public class Opcodes {
 		});
 		opcodes[0xFC] = create("ILLEGAL_FC", 4, 1, () -> {});
 		opcodes[0xFD] = create("ILLEGAL_FD", 4, 1, () -> {});
-		opcodes[0xFE] = create("CP d8", 8, 2, () -> cpu.cp(cpu.a, cpu.rom[cpu.pc + 1]));
+		opcodes[0xFE] = create("CP d8", 8, 2, () -> cpu.cp(cpu.a, cpu.getMem(cpu.pc + 1)));
 		opcodes[0xFF] = create("RST 38H", 16, 0, () -> {
 			cpu.push(cpu.pc + 1);
 			cpu.pc = 0x38;
@@ -731,11 +731,12 @@ public class Opcodes {
 
 	public int exec() {
 		Opcode opcode = null;
-		short i = cpu.rom[cpu.pc];
+		int pc = cpu.pc;
+		short i = cpu.getMem(pc);
 		boolean isCB = i == 0xCB;
 		
 		if (isCB) {
-			i = cpu.rom[cpu.pc + 1];
+			i = cpu.getMem(pc + 1);
 			opcode = opcodesCB[i];
 		} else {
 			opcode = opcodes[i];

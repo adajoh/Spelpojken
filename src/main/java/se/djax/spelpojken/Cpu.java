@@ -82,7 +82,7 @@ public class Cpu {
 	}
 
 	public int get16bitValue(int startAddress) {
-		return get16bitValue(rom[startAddress + 1], rom[startAddress]);
+		return get16bitValue(getMem(startAddress + 1), getMem(startAddress));
 	}
 
 	public int get16bitValue(short high, short low) {
@@ -550,8 +550,8 @@ public class Cpu {
 	public int pop() {
 		int i = get16bitValue(sp);
 
-		rom[sp] = 0;
-		rom[sp + 1] = 0;
+		setMem(sp, (short) 0);
+		setMem(sp + 1, (short) 0);
 
 		sp += 2;
 
@@ -560,8 +560,8 @@ public class Cpu {
 
 	public void push(int val) { // 16bit always?
 		sp -= 2;
-		rom[sp] = (short) getLowByte(val);
-		rom[sp + 1] = (short) getHighByte(val);
+		setMem(sp, (short) getLowByte(val));
+		setMem(sp + 1, (short) getHighByte(val));
 	}
 
 	public int getLowByte(int val) {
@@ -597,11 +597,11 @@ public class Cpu {
 	}
 
 	public short getMem(int i) {
-		return rom[i];
+		return rom[i & 0xFFFF];
 	}
 
 	public void setMem(int i, short value) {
-		rom[i] = value;
+		rom[i & 0xFFFF] = value;
 	}
 
 }

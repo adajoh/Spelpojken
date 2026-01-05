@@ -13,11 +13,21 @@ public class Spelpojken {
 	public static void main(String[] args) {
 		try {
 			GameBoy gameBoy = new GameBoy();
+			boolean headless = false;
+			String romPath = null;
 
-			if (args.length > 0) {
-				File romFile = new File(args[0]);
+			for (String arg : args) {
+				if (arg.equals("--headless")) {
+					headless = true;
+				} else if (romPath == null) {
+					romPath = arg;
+				}
+			}
+
+			if (romPath != null) {
+				File romFile = new File(romPath);
 				if (!romFile.exists()) {
-					System.err.println("Filen hittades inte: " + args[0]);
+					System.err.println("Filen hittades inte: " + romPath);
 					System.exit(1);
 				}
 				gameBoy.loadRom(romFile);
@@ -28,6 +38,18 @@ public class Spelpojken {
 				}
 				byte[] romData = romStream.readAllBytes();
 				gameBoy.loadRom(romData);
+			}
+
+			if (headless) {
+				System.out.println("Kör i headless-läge...");
+				try {
+					while (true) {
+						gameBoy.step();
+					}
+				} catch (Exception e) {
+					System.err.println("PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase());
+					throw e;
+				}
 			}
 
 			new MemoryForm(gameBoy);

@@ -69,7 +69,7 @@ public class Gpu {
 		if (!isLCDEnabled()) {
 			// LCD disabled - reset everything
 			scanLineCyclesCounter = 0;
-			cpu.rom[REG_LY] = 0;
+			cpu.setMem(REG_LY, (short) 0);
 			setMode(MODE_HBLANK);
 			return;
 		}
@@ -109,7 +109,7 @@ public class Gpu {
 					
 					// Move to next line
 					int ly = cpu.getMem(REG_LY) + 1;
-					cpu.rom[REG_LY] = (short) ly;
+					cpu.setMem(REG_LY, (short) ly);
 					
 					checkLYC();
 					
@@ -147,7 +147,7 @@ public class Gpu {
 					if (ly > 153) {
 						// VBlank finished, start new frame
 						ly = 0;
-						cpu.rom[REG_LY] = 0;
+						cpu.setMem(REG_LY, (short) 0);
 						setMode(MODE_OAM_SEARCH);
 						
 						// Request STAT interrupt for OAM if enabled
@@ -155,7 +155,7 @@ public class Gpu {
 							interrupts.requestInterrupt(Interrupts.LCD_STAT);
 						}
 					} else {
-						cpu.rom[REG_LY] = (short) ly;
+						cpu.setMem(REG_LY, (short) ly);
 					}
 					
 					checkLYC();
@@ -168,7 +168,7 @@ public class Gpu {
 		currentMode = mode;
 		int stat = cpu.getMem(REG_STAT);
 		stat = (stat & 0xFC) | mode;
-		cpu.rom[REG_STAT] = (short) stat;
+		cpu.setMem(REG_STAT, (short) stat);
 	}
 
 	private void checkLYC() {
@@ -179,7 +179,7 @@ public class Gpu {
 		if (ly == lyc) {
 			// Set coincidence flag
 			stat |= 0x04;
-			cpu.rom[REG_STAT] = (short) stat;
+			cpu.setMem(REG_STAT, (short) stat);
 			
 			// Request STAT interrupt if LYC=LY interrupt is enabled
 			if (interrupts != null && (stat & 0x40) != 0) {
@@ -188,7 +188,7 @@ public class Gpu {
 		} else {
 			// Clear coincidence flag
 			stat &= ~0x04;
-			cpu.rom[REG_STAT] = (short) stat;
+			cpu.setMem(REG_STAT, (short) stat);
 		}
 	}
 
@@ -395,7 +395,7 @@ public class Gpu {
 	public void doDMATransfer(int sourceHigh) {
 		int sourceAddress = sourceHigh << 8;
 		for (int i = 0; i < 160; i++) {
-			cpu.rom[0xFE00 + i] = cpu.getMem(sourceAddress + i);
+			cpu.setMem(0xFE00 + i, cpu.getMem(sourceAddress + i));
 		}
 	}
 
