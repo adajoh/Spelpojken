@@ -37,11 +37,12 @@ public class Joypad {
 	 * Read joypad register.
 	 */
 	public short read() {
-		int value = cpu.getRawMem(JOYPAD_REGISTER) | 0xCF; // Upper 2 bits always 1, lower 4 bits default 1
+		int joyp = cpu.getRawMem(JOYPAD_REGISTER);
+		int value = 0xCF | (joyp & 0x30); // Bits 6-7 always 1, bits 4-5 from register, bits 0-3 default 1
 		
-		// Check which buttons are selected
-		boolean selectButtons = (cpu.getRawMem(JOYPAD_REGISTER) & 0x20) == 0;
-		boolean selectDpad = (cpu.getRawMem(JOYPAD_REGISTER) & 0x10) == 0;
+		// Check which buttons are selected (0 = selected)
+		boolean selectButtons = (joyp & 0x20) == 0;
+		boolean selectDpad = (joyp & 0x10) == 0;
 		
 		if (selectButtons) {
 			if (buttonA) value &= ~0x01;
@@ -64,7 +65,7 @@ public class Joypad {
 	 * Write to joypad register (only bits 4-5 are writable).
 	 */
 	public void write(short value) {
-		cpu.setRawMem(JOYPAD_REGISTER, (short) ((cpu.getRawMem(JOYPAD_REGISTER) & 0xCF) | (value & 0x30)));
+		cpu.setRawMem(JOYPAD_REGISTER, (short) (value & 0x30));
 	}
 
 	/**

@@ -184,9 +184,6 @@ public class GameBoy {
 		// Update GPU
 		gpu.exec(cycles);
 
-		// Handle special memory writes
-		handleMemoryIO();
-
 		// Notify listeners
 		for (InstructionListener listener : listeners) {
 			listener.onExecution();
@@ -203,31 +200,25 @@ public class GameBoy {
 	}
 
 	/**
-	 * Handle special memory writes
-	 */
-	private void handleMemoryIO() {
-		// DIV register reset (any write resets it to 0)
-		// This is handled in Memory class or can be checked here
-		
-		// DMA transfer
-		int dma = cpu.getRawMem(0xFF46);
-		if (dma > 0) {
-			gpu.doDMATransfer(dma);
-			cpu.setRawMem(0xFF46, (short) 0);
-		}
-	}
-
-	/**
 	 * Write to memory with MBC handling.
 	 */
 	public void writeMem(int address, short value) {
+		address &= 0xFFFF;
+		
+		// DMA transfer
+		if (address == 0xFF46) {
+			cpu.setRawMem(address, value);
+			gpu.doDMATransfer(value);
+			return;
+		}
+
 		// ROM area - MBC control
 		if (address < 0x8000) {
 			mbc.writeRom(address, value);
 			return;
 		}
 
-		// VRAM - can be written directly to raw memory
+		// VRAM
 		if (address >= 0x8000 && address < 0xA000) {
 			cpu.setRawMem(address, value);
 			return;
@@ -239,6 +230,25 @@ public class GameBoy {
 			return;
 		}
 		
+		// WRAM
+		if (address >= 0xC000 && address < 0xE000) {
+			cpu.setRawMem(address, value);
+			return;
+		}
+
+		// Echo RAM (0xE000-0xFDFF mirrors 0xC000-0xDDFF)
+		if (address >= 0xE000 && address < 0xFE00) {
+			cpu.setRawMem(address - 0x2000, value);
+			return;
+		}
+
+		// STAT register
+		if (address == 0xFF41) {
+			short currentStat = cpu.getRawMem(0xFF41);
+			cpu.setRawMem(address, (short) (0x80 | (value & 0x78) | (currentStat & 0x07)));
+			return;
+		}
+
 		// Joypad register
 		if (address == Joypad.JOYPAD_REGISTER) {
 			joypad.write(value);
@@ -257,13 +267,6 @@ public class GameBoy {
 			timer.resetTimerCounter();
 			return;
 		}
-
-		// Echo RAM (0xE000-0xFDFF mirrors 0xC000-0xDDFF)
-		if (address >= 0xE000 && address < 0xFE00) {
-			cpu.setRawMem(address, value);
-			cpu.setRawMem(address - 0x2000, value);
-			return;
-		}
 		
 		// Normal memory write
 		cpu.setRawMem(address, value);
@@ -273,9 +276,16 @@ public class GameBoy {
 	 * Read from memory with MBC handling.
 	 */
 	public short readMem(int address) {
+		address &= 0xFFFF;
+
 		// External RAM
 		if (address >= 0xA000 && address < 0xC000) {
 			return mbc.readRam(address);
+		}
+
+		// Echo RAM
+		if (address >= 0xE000 && address < 0xFE00) {
+			return cpu.getRawMem(address - 0x2000);
 		}
 		
 		// Joypad register

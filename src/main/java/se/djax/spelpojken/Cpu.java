@@ -180,29 +180,27 @@ public class Cpu {
 	 */
 	public void daa() {
 		int a = getRegister("A");
+		int correction = 0;
+		boolean setCarry = false;
 		
-		if (!getFlag(FLAG_SUBTRACT)) {
-			// After addition
-			if (getFlag(FLAG_CARRY) || a > 0x99) {
-				a += 0x60;
-				toogleFlag(FLAG_CARRY, true);
-			}
-			if (getFlag(FLAG_HALF_CARRY) || (a & 0x0F) > 0x09) {
-				a += 0x06;
-			}
-		} else {
-			// After subtraction
-			if (getFlag(FLAG_CARRY)) {
-				a -= 0x60;
-			}
-			if (getFlag(FLAG_HALF_CARRY)) {
-				a -= 0x06;
-			}
+		if (getFlag(FLAG_HALF_CARRY) || (!getFlag(FLAG_SUBTRACT) && (a & 0x0F) > 0x09)) {
+			correction |= 0x06;
 		}
 		
-		a &= 0xFF;
+		if (getFlag(FLAG_CARRY) || (!getFlag(FLAG_SUBTRACT) && a > 0x99)) {
+			correction |= 0x60;
+			setCarry = true;
+		}
+		
+		if (getFlag(FLAG_SUBTRACT)) {
+			a = (a - correction) & 0xFF;
+		} else {
+			a = (a + correction) & 0xFF;
+		}
+		
 		toogleFlag(FLAG_ZERO, a == 0);
 		toogleFlag(FLAG_HALF_CARRY, false);
+		toogleFlag(FLAG_CARRY, setCarry);
 		
 		setRegister("A", (short) a);
 	}
@@ -473,7 +471,7 @@ public class Cpu {
 			e = val;
 			break;
 		case "F":
-			f = val;
+			f = (short) (val & 0xF0);
 			break;
 		case "H":
 			h = val;
@@ -552,12 +550,7 @@ public class Cpu {
 
 	public int pop() {
 		int i = get16bitValue(sp);
-
-		setMem(sp, (short) 0);
-		setMem(sp + 1, (short) 0);
-
 		sp += 2;
-
 		return i;
 	}
 

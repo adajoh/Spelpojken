@@ -1,5 +1,8 @@
 package se.djax.spelpojken;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Game Boy GPU/PPU implementation.
  * Handles rendering of tiles, sprites, and LCD timing.
@@ -46,6 +49,7 @@ public class Gpu {
 
 	private final Cpu cpu;
 	private final int[][] pixelData;
+	private final int[][] bgPixelColorIndex;
 	private Interrupts interrupts;
 
 	private int scanLineCyclesCounter = 0;
@@ -55,6 +59,7 @@ public class Gpu {
 	public Gpu(Cpu cpu) {
 		this.cpu = cpu;
 		pixelData = new int[WIDTH][HEIGHT];
+		bgPixelColorIndex = new int[WIDTH][HEIGHT];
 	}
 
 	public void setInterrupts(Interrupts interrupts) {
@@ -202,16 +207,17 @@ public class Gpu {
 		// Draw background
 		if ((lcdc & 0x01) != 0) {
 			drawBackground(line);
+			
+			// Draw window
+			if ((lcdc & 0x20) != 0) {
+				drawWindow(line);
+			}
 		} else {
 			// Fill with white if BG disabled
 			for (int x = 0; x < WIDTH; x++) {
 				pixelData[x][line] = COLORS[0];
+				bgPixelColorIndex[x][line] = 0;
 			}
-		}
-		
-		// Draw window
-		if ((lcdc & 0x20) != 0) {
-			drawWindow(line);
 		}
 		
 		// Draw sprites
@@ -258,6 +264,7 @@ public class Gpu {
 			int color = (bgp >> (colorNum * 2)) & 0x03;
 			
 			pixelData[pixel][line] = COLORS[color];
+			bgPixelColorIndex[pixel][line] = colorNum;
 		}
 	}
 
@@ -305,56 +312,69 @@ public class Gpu {
 			int color = (bgp >> (colorNum * 2)) & 0x03;
 			
 			pixelData[pixel][line] = COLORS[color];
+			bgPixelColorIndex[pixel][line] = colorNum;
 		}
 		
 		windowLineCounter++;
 	}
 
+
 	private void drawSprites(int line) {
 		int lcdc = cpu.getMem(REG_LCDC);
 		int spriteHeight = (lcdc & 0x04) != 0 ? 16 : 8;
 		
-		// OAM is at 0xFE00-0xFE9F (40 sprites, 4 bytes each)
-		int spritesDrawn = 0;
+		// Collect up to 10 sprites on this line
+		class SpriteInfo {
+			int index;
+			int x;
+			int y;
+			int tile;
+			int attr;
+			SpriteInfo(int i, int x, int y, int t, int a) {
+				this.index = i; this.x = x; this.y = y; this.tile = t; this.attr = a;
+			}
+		}
+		java.util.List<SpriteInfo> spritesOnLine = new java.util.ArrayList<>();
 		
-		for (int sprite = 0; sprite < 40 && spritesDrawn < 10; sprite++) {
+		for (int sprite = 0; sprite < 40; sprite++) {
 			int oamAddress = 0xFE00 + sprite * 4;
-			
 			int spriteY = cpu.getMem(oamAddress) - 16;
 			int spriteX = cpu.getMem(oamAddress + 1) - 8;
 			int tileIndex = cpu.getMem(oamAddress + 2);
 			int attributes = cpu.getMem(oamAddress + 3);
 			
-			// Check if sprite is on this line
-			if (line < spriteY || line >= spriteY + spriteHeight) {
-				continue;
+			if (line >= spriteY && line < spriteY + spriteHeight) {
+				spritesOnLine.add(new SpriteInfo(sprite, spriteX, spriteY, tileIndex, attributes));
+				if (spritesOnLine.size() >= 10) break;
 			}
+		}
+		
+		// Sort sprites: largest X first, then largest index first (to draw them in reverse priority)
+		spritesOnLine.sort((s1, s2) -> {
+			if (s1.x != s2.x) return Integer.compare(s2.x, s1.x);
+			return Integer.compare(s2.index, s1.index);
+		});
+		
+		for (SpriteInfo sprite : spritesOnLine) {
+			int spriteX = sprite.x;
+			int spriteY = sprite.y;
+			int tileIndex = sprite.tile;
+			int attributes = sprite.attr;
 			
-			// Check if sprite is visible
-			if (spriteX < -7 || spriteX >= WIDTH) {
-				continue;
-			}
-			
-			spritesDrawn++;
-			
-			// Get sprite attributes
 			boolean flipY = (attributes & 0x40) != 0;
 			boolean flipX = (attributes & 0x20) != 0;
 			boolean priority = (attributes & 0x80) != 0;
 			int palette = (attributes & 0x10) != 0 ? cpu.getMem(REG_OBP1) : cpu.getMem(REG_OBP0);
 			
-			// For 8x16 sprites, ignore bit 0 of tile index
 			if (spriteHeight == 16) {
 				tileIndex &= 0xFE;
 			}
 			
-			// Calculate which row of the sprite to draw
 			int tileY = line - spriteY;
 			if (flipY) {
 				tileY = spriteHeight - 1 - tileY;
 			}
 			
-			// Handle 8x16 sprites
 			if (tileY >= 8) {
 				tileIndex++;
 				tileY -= 8;
@@ -366,22 +386,15 @@ public class Gpu {
 			
 			for (int pixelX = 0; pixelX < 8; pixelX++) {
 				int x = spriteX + pixelX;
-				if (x < 0 || x >= WIDTH) {
-					continue;
-				}
+				if (x < 0 || x >= WIDTH) continue;
 				
 				int colorBit = flipX ? pixelX : 7 - pixelX;
 				int colorNum = ((data2 >> colorBit) & 1) << 1 | ((data1 >> colorBit) & 1);
 				
-				// Color 0 is transparent for sprites
-				if (colorNum == 0) {
-					continue;
-				}
+				if (colorNum == 0) continue;
 				
-				// Check priority (BG over OBJ if priority bit set and BG not color 0)
-				if (priority && pixelData[x][line] != COLORS[0]) {
-					continue;
-				}
+				// Priority: if bit 7 is set, sprite is hidden by BG colors 1, 2, 3
+				if (priority && bgPixelColorIndex[x][line] != 0) continue;
 				
 				int color = (palette >> (colorNum * 2)) & 0x03;
 				pixelData[x][line] = COLORS[color];
