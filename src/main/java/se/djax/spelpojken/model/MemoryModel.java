@@ -104,10 +104,10 @@ public class MemoryModel extends AbstractTableModel implements InstructionListen
 		descriptions[0xFF47] = "BG & Window Palette Data";
 		descriptions[0xFF4A] = "Window Y Position";
 		descriptions[0xFF4B] = "Window X Position";
-		descriptions[0xFF4D] = "KEY1 – GBC Mode – Speed Switch (R/W)";
+		descriptions[0xFF4D] = "KEY1 - GBC Mode - Speed Switch (R/W)";
 
-		descriptions[0xFF4F] = "VBK – GBC Mode – VRAM Bank (R/W)";
-		descriptions[0xFF70] = "SVBK – GBC Mode – WRAM Bank (R/W)";
+		descriptions[0xFF4F] = "VBK - GBC Mode - VRAM Bank (R/W)";
+		descriptions[0xFF70] = "SVBK - GBC Mode - WRAM Bank (R/W)";
 		descriptions[0xFF0F] = "Interrupt Flags (R/W)";
 		descriptions[0xFFFF] = "Interrupt enable flags (R/W)";
 
