@@ -17,6 +17,13 @@ public class Cpu {
 
 	public final short[] rom;
 
+	public interface MemoryBus {
+		short read(int address);
+		void write(int address, short value);
+	}
+
+	private MemoryBus memoryBus;
+
 	public short a;
 	public short b;
 	public short c;
@@ -29,17 +36,16 @@ public class Cpu {
 	public int pc = 0x0000;
 	public int sp = 0xFFFE;
 
+	public void setMemoryBus(MemoryBus bus) {
+		this.memoryBus = bus;
+	}
+
 	public Cpu() {
 		rom = new short[GameBoy.MEMORY_SIZE];
 	}
 
 	public void loadRom(byte[] data, byte[] bootData) {
 		try {
-			// init
-			for (int i = 0; i < rom.length; i++) {
-				// rom[i] = -1;
-			}
-
 			// load rom
 			for (int i = 0; i < data.length && i < rom.length; i++) {
 				rom[i] = (short) Byte.toUnsignedInt(data[i]);
@@ -507,13 +513,10 @@ public class Cpu {
 		boolean carry = getFlag(Cpu.FLAG_CARRY);
 		toogleFlag(Cpu.FLAG_CARRY, getBit(i, 7));
 
-		i = (short) (((i & 0xff) << 1) | ((i & 0xff) >>> (7)));
-		i = (short) (i & 0xFF);
+		i = (short) ((i << 1) & 0xFF);
 
 		if (carry) {
 			i = (short) setBit(i, 0);
-		} else {
-			i = (short) resetBit(i, 0);
 		}
 
 		toogleFlag(Cpu.FLAG_ZERO, i == 0);
@@ -597,10 +600,25 @@ public class Cpu {
 	}
 
 	public short getMem(int i) {
-		return rom[i & 0xFFFF];
+		if (memoryBus != null) {
+			return memoryBus.read(i & 0xFFFF);
+		}
+		return getRawMem(i);
 	}
 
 	public void setMem(int i, short value) {
+		if (memoryBus != null) {
+			memoryBus.write(i & 0xFFFF, value);
+		} else {
+			setRawMem(i, value);
+		}
+	}
+
+	public short getRawMem(int i) {
+		return rom[i & 0xFFFF];
+	}
+
+	public void setRawMem(int i, short value) {
 		rom[i & 0xFFFF] = value;
 	}
 

@@ -193,7 +193,7 @@ public class MBC {
 		// Copy ROM bank to 0x4000-0x7FFF
 		for (int i = 0; i < 0x4000; i++) {
 			if (bankOffset + i < fullRom.length) {
-				cpu.setMem(0x4000 + i, fullRom[bankOffset + i]);
+				cpu.setRawMem(0x4000 + i, fullRom[bankOffset + i]);
 			}
 		}
 	}

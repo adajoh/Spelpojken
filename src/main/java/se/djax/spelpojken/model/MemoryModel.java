@@ -120,7 +120,7 @@ public class MemoryModel extends AbstractTableModel implements InstructionListen
 
 	@Override
 	public int getRowCount() {
-		return cpu.rom.length / 16;
+		return GameBoy.MEMORY_SIZE / 16;
 	}
 
 	@Override
@@ -177,9 +177,9 @@ public class MemoryModel extends AbstractTableModel implements InstructionListen
 
 			return s;
 		} else if (column < 17) {
-			return Integer.toHexString(cpu.rom[column + row * 16 - 1]).toUpperCase();
+			return Integer.toHexString(cpu.getMem(column + row * 16 - 1)).toUpperCase();
 		} else {
-			return (char) cpu.rom[column + row * 16 - 17];
+			return (char) cpu.getMem(column + row * 16 - 17);
 		}
 	}
 
@@ -202,8 +202,9 @@ public class MemoryModel extends AbstractTableModel implements InstructionListen
 			if (descriptions[address] != null) {
 				s += " - " + descriptions[address];
 			}
-			if (cpu.rom[address] < 0xFF) {
-				s += " [" + gameBoy.getOpcodes().getOpcode(cpu.rom[address], false).name + "]";
+			int value = cpu.getMem(address);
+			if (value < 0xFF) {
+				s += " [" + gameBoy.getOpcodes().getOpcode(value, false).name + "]";
 			}
 
 			return s;

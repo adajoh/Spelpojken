@@ -36,12 +36,12 @@ public class Gpu {
 	private static final int REG_WY = 0xFF4A;    // Window Y
 	private static final int REG_WX = 0xFF4B;    // Window X
 
-	// Colors (grayscale)
+	// Colors (RGBA8888)
 	private static final int[] COLORS = {
-		0xFFFFFF,  // White
-		0xAAAAAA,  // Light gray
-		0x555555,  // Dark gray
-		0x000000   // Black
+		0xFFFFFFFF,  // White
+		0xAAAAAAFF,  // Light gray
+		0x555555FF,  // Dark gray
+		0x000000FF   // Black
 	};
 
 	private final Cpu cpu;

@@ -52,7 +52,7 @@ public class Opcodes {
 		});
 		opcodes[0x04] = create("INC B", 4, 1, () -> cpu.inc("B"));
 		opcodes[0x05] = create("DEC B", 4, 1, () -> cpu.dec("B"));
-		opcodes[0x06] = create("LD B,d8", 8, 2, () -> cpu.b = cpu.rom[cpu.pc + 1]);
+		opcodes[0x06] = create("LD B,d8", 8, 2, () -> cpu.b = cpu.getMem(cpu.pc + 1));
 		opcodes[0x07] = create("RLCA", 4, 1, () -> {
 			boolean bit7 = cpu.getBit(cpu.a, 7);
 			cpu.a = (short) ((cpu.a << 1) & 0xFF);
@@ -64,8 +64,8 @@ public class Opcodes {
 		});
 		opcodes[0x08] = create("LD (a16),SP", 20, 3, () -> {
 			int addr = cpu.get16bitValue(cpu.pc + 1);
-			cpu.rom[addr] = (short) cpu.getLowByte(cpu.sp);
-			cpu.rom[addr + 1] = (short) cpu.getHighByte(cpu.sp);
+			cpu.setMem(addr, (short) cpu.getLowByte(cpu.sp));
+			cpu.setMem(addr + 1, (short) cpu.getHighByte(cpu.sp));
 		});
 		opcodes[0x09] = create("ADD HL,BC", 8, 1, () -> {
 			cpu.set16BitRegister("H", "L", cpu.add16Bit(cpu.get16BitRegister("HL"), cpu.get16BitRegister("BC"), true));
@@ -78,7 +78,7 @@ public class Opcodes {
 		});
 		opcodes[0x0C] = create("INC C", 4, 1, () -> cpu.inc("C"));
 		opcodes[0x0D] = create("DEC C", 4, 1, () -> cpu.dec("C"));
-		opcodes[0x0E] = create("LD C,d8", 8, 2, () -> cpu.c = cpu.rom[cpu.pc + 1]);
+		opcodes[0x0E] = create("LD C,d8", 8, 2, () -> cpu.c = cpu.getMem(cpu.pc + 1));
 		opcodes[0x0F] = create("RRCA", 4, 1, () -> {
 			boolean bit0 = cpu.getBit(cpu.a, 0);
 			cpu.a = (short) ((cpu.a >> 1) & 0x7F);
@@ -104,7 +104,7 @@ public class Opcodes {
 		});
 		opcodes[0x14] = create("INC D", 4, 1, () -> cpu.inc("D"));
 		opcodes[0x15] = create("DEC D", 4, 1, () -> cpu.dec("D"));
-		opcodes[0x16] = create("LD D,d8", 8, 2, () -> cpu.d = cpu.rom[cpu.pc + 1]);
+		opcodes[0x16] = create("LD D,d8", 8, 2, () -> cpu.d = cpu.getMem(cpu.pc + 1));
 		opcodes[0x17] = create("RLA", 4, 1, () -> {
 			boolean carry = cpu.getFlag(Cpu.FLAG_CARRY);
 			boolean bit7 = cpu.getBit(cpu.a, 7);
@@ -116,21 +116,21 @@ public class Opcodes {
 			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
 		});
 		opcodes[0x18] = create("JR r8", 12, 2, () -> {
-			byte i = (byte) cpu.rom[cpu.pc + 1];
+			byte i = (byte) cpu.getMem(cpu.pc + 1);
 			cpu.pc += i;
 		});
 		opcodes[0x19] = create("ADD HL,DE", 8, 1, () -> {
 			cpu.set16BitRegister("H", "L", cpu.add16Bit(cpu.get16BitRegister("HL"), cpu.get16BitRegister("DE"), true));
 		});
 		opcodes[0x1A] = create("LD A,(DE)", 8, 1, () -> {
-			cpu.setRegister("A", cpu.rom[cpu.get16BitRegister("DE")]);
+			cpu.setRegister("A", cpu.getMem(cpu.get16BitRegister("DE")));
 		});
 		opcodes[0x1B] = create("DEC DE", 8, 1, () -> {
 			cpu.set16BitRegister("D", "E", cpu.sub16Bit(cpu.get16BitRegister("DE"), 1));
 		});
 		opcodes[0x1C] = create("INC E", 4, 1, () -> cpu.inc("E"));
 		opcodes[0x1D] = create("DEC E", 4, 1, () -> cpu.dec("E"));
-		opcodes[0x1E] = create("LD E,d8", 8, 2, () -> cpu.e = cpu.rom[cpu.pc + 1]);
+		opcodes[0x1E] = create("LD E,d8", 8, 2, () -> cpu.e = cpu.getMem(cpu.pc + 1));
 		opcodes[0x1F] = create("RRA", 4, 1, () -> {
 			boolean carry = cpu.getFlag(Cpu.FLAG_CARRY);
 			boolean bit0 = cpu.getBit(cpu.a, 0);
@@ -145,7 +145,7 @@ public class Opcodes {
 		// 0x20 - 0x2F
 		opcodes[0x20] = create("JR NZ,r8", 12, 2, () -> {
 			if (!cpu.getFlag(Cpu.FLAG_ZERO)) {
-				byte jp = (byte) cpu.rom[cpu.pc + 1];
+				byte jp = (byte) cpu.getMem(cpu.pc + 1);
 				cpu.pc += jp;
 			}
 		});
@@ -154,7 +154,7 @@ public class Opcodes {
 		});
 		opcodes[0x22] = create("LD (HL+),A", 8, 1, () -> {
 			int hl = cpu.get16BitRegister("HL");
-			cpu.rom[hl] = cpu.getRegister("A");
+			cpu.setMem(hl, cpu.getRegister("A"));
 			cpu.set16BitRegister("H", "L", hl + 1);
 		});
 		opcodes[0x23] = create("INC HL", 8, 1, () -> {
@@ -162,11 +162,11 @@ public class Opcodes {
 		});
 		opcodes[0x24] = create("INC H", 4, 1, () -> cpu.inc("H"));
 		opcodes[0x25] = create("DEC H", 4, 1, () -> cpu.dec("H"));
-		opcodes[0x26] = create("LD H,d8", 8, 2, () -> cpu.h = cpu.rom[cpu.pc + 1]);
+		opcodes[0x26] = create("LD H,d8", 8, 2, () -> cpu.h = cpu.getMem(cpu.pc + 1));
 		opcodes[0x27] = create("DAA", 4, 1, () -> cpu.daa());
 		opcodes[0x28] = create("JR Z,r8", 12, 2, () -> {
 			if (cpu.getFlag(Cpu.FLAG_ZERO)) {
-				byte jp = (byte) cpu.rom[cpu.pc + 1];
+				byte jp = (byte) cpu.getMem(cpu.pc + 1);
 				cpu.pc += jp;
 			}
 		});
@@ -183,7 +183,7 @@ public class Opcodes {
 		});
 		opcodes[0x2C] = create("INC L", 4, 1, () -> cpu.inc("L"));
 		opcodes[0x2D] = create("DEC L", 4, 1, () -> cpu.dec("L"));
-		opcodes[0x2E] = create("LD L,d8", 8, 2, () -> cpu.setRegister("L", cpu.rom[cpu.pc + 1]));
+		opcodes[0x2E] = create("LD L,d8", 8, 2, () -> cpu.setRegister("L", cpu.getMem(cpu.pc + 1)));
 		opcodes[0x2F] = create("CPL", 4, 1, () -> {
 			cpu.setRegister("A", cpu.cpl(cpu.getRegister("A")));
 			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, true);
@@ -193,7 +193,7 @@ public class Opcodes {
 		// 0x30 - 0x3F
 		opcodes[0x30] = create("JR NC,r8", 12, 2, () -> {
 			if (!cpu.getFlag(Cpu.FLAG_CARRY)) {
-				byte jp = (byte) cpu.rom[cpu.pc + 1];
+				byte jp = (byte) cpu.getMem(cpu.pc + 1);
 				cpu.pc += jp;
 			}
 		});
@@ -202,7 +202,7 @@ public class Opcodes {
 		});
 		opcodes[0x32] = create("LD (HL-),A", 8, 1, () -> {
 			int hl = cpu.get16BitRegister("HL");
-			cpu.rom[hl] = cpu.a;
+			cpu.setMem(hl, cpu.a);
 			cpu.set16BitRegister("H", "L", hl - 1);
 		});
 		opcodes[0x33] = create("INC SP", 8, 1, () -> {
@@ -216,7 +216,7 @@ public class Opcodes {
 		opcodes[0x37] = create("SCF", 4, 1, () -> cpu.scf());
 		opcodes[0x38] = create("JR C,r8", 12, 2, () -> {
 			if (cpu.getFlag(Cpu.FLAG_CARRY)) {
-				byte jp = (byte) cpu.rom[cpu.pc + 1];
+				byte jp = (byte) cpu.getMem(cpu.pc + 1);
 				cpu.pc += jp;
 			}
 		});
@@ -233,7 +233,7 @@ public class Opcodes {
 		});
 		opcodes[0x3C] = create("INC A", 4, 1, () -> cpu.inc("A"));
 		opcodes[0x3D] = create("DEC A", 4, 1, () -> cpu.dec("A"));
-		opcodes[0x3E] = create("LD A,d8", 8, 2, () -> cpu.a = cpu.rom[cpu.pc + 1]);
+		opcodes[0x3E] = create("LD A,d8", 8, 2, () -> cpu.a = cpu.getMem(cpu.pc + 1));
 		opcodes[0x3F] = create("CCF", 4, 1, () -> cpu.ccf());
 
 		// 0x40 - 0x4F: LD B/C,r

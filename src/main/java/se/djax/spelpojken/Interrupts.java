@@ -52,28 +52,33 @@ public class Interrupts {
 		// Check if any enabled interrupt is pending
 		int pending = ifReg & ieReg & 0x1F;
 		
+		// Wake from HALT even if IME is disabled
 		if (pending != 0) {
-			// Wake from HALT even if IME is disabled
-			halted = false;
-			
-			if (ime) {
-				// Handle interrupts in priority order
-				for (int i = 0; i < 5; i++) {
-					if ((pending & (1 << i)) != 0) {
-						// Disable IME
-						ime = false;
-						
-						// Clear the interrupt flag
-						cpu.setMem(IF_REGISTER, (short) (ifReg & ~(1 << i)));
-						
-						// Push PC onto stack
-						cpu.push(cpu.pc);
-						
-						// Jump to interrupt vector
-						cpu.pc = VECTORS[i];
-						
-						return 20; // Interrupt handling takes 20 cycles
-					}
+			if (halted) {
+				halted = false;
+				// Do NOT handle interrupt if IME is disabled, just wake up
+			}
+		}
+
+		if (ime && pending != 0) {
+			// Handle interrupts in priority order
+			for (int i = 0; i < 5; i++) {
+				if ((pending & (1 << i)) != 0) {
+					// Disable IME
+					ime = false;
+					imeScheduled = false; // Cancel any scheduled EI
+					
+					// Clear the interrupt flag
+					ifReg = cpu.getMem(IF_REGISTER); // Refresh in case it changed
+					cpu.setMem(IF_REGISTER, (short) (ifReg & ~(1 << i)));
+					
+					// Push PC onto stack
+					cpu.push(cpu.pc);
+					
+					// Jump to interrupt vector
+					cpu.pc = VECTORS[i];
+					
+					return 20; // Interrupt handling takes 20 cycles
 				}
 			}
 		}

@@ -57,7 +57,7 @@ public class Timer {
 			div = (div + 1) & 0xFF;
 			
 			// Write directly to avoid reset behavior
-			cpu.rom[DIV_REGISTER] = (short) div;
+			cpu.setRawMem(DIV_REGISTER, (short) div);
 		}
 	}
 
@@ -96,7 +96,7 @@ public class Timer {
 	 * Reset DIV register (writing any value resets it to 0).
 	 */
 	public void resetDIV() {
-		cpu.rom[DIV_REGISTER] = 0;
+		cpu.setRawMem(DIV_REGISTER, (short) 0);
 		divCounter = 0;
 	}
 

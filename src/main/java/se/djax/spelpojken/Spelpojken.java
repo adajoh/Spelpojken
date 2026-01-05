@@ -41,13 +41,24 @@ public class Spelpojken {
 			}
 
 			if (headless) {
-				System.out.println("Kör i headless-läge...");
+				System.out.println("Running headless mode...");
 				try {
+					long steps = 0;
 					while (true) {
 						gameBoy.step();
+						steps++;
+						if (steps % 100000 == 0) {
+							System.out.println("PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase() + 
+								" SP: 0x" + Integer.toHexString(gameBoy.getCpu().sp).toUpperCase() +
+								" LY: " + gameBoy.getCpu().getRawMem(0xFF44) +
+								" IE: " + Integer.toHexString(gameBoy.getCpu().getRawMem(0xFFFF)) +
+								" IF: " + Integer.toHexString(gameBoy.getCpu().getRawMem(0xFF0F)) +
+								" IME: " + gameBoy.getInterrupts().isIME());
+						}
+						if (steps > 1000000) break;
 					}
 				} catch (Exception e) {
-					System.err.println("PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase());
+					System.err.println("Exception at PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase());
 					throw e;
 				}
 			}
