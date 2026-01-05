@@ -26,6 +26,7 @@ public class MainForm extends ApplicationAdapter {
 
 	@Override
 	public void create() {
+		gameBoy.getApu().initAudio();
 		shapeRenderer = new ShapeRenderer();
 		camera = new OrthographicCamera(Gpu.WIDTH, Gpu.HEIGHT);
 		camera.translate(camera.viewportWidth / 2, camera.viewportHeight / 2);

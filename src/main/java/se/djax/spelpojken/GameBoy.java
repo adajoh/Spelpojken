@@ -24,6 +24,7 @@ public class GameBoy {
 	private Interrupts interrupts;
 	private Timer timer;
 	private Joypad joypad;
+	private Apu apu;
 	private MBC mbc;
 	private File romFile;
 	private short[] fullRomData;
@@ -39,6 +40,7 @@ public class GameBoy {
 		gpu.setInterrupts(interrupts);
 		timer = new Timer(cpu, interrupts);
 		joypad = new Joypad(cpu, interrupts);
+		apu = new Apu(cpu);
 		mbc = new MBC(cpu);
 
 		cpu.setMemoryBus(new Cpu.MemoryBus() {
@@ -183,6 +185,9 @@ public class GameBoy {
 		
 		// Update GPU
 		gpu.exec(cycles);
+		
+		// Update APU
+		apu.exec(cycles);
 
 		// Notify listeners
 		for (InstructionListener listener : listeners) {
@@ -268,6 +273,13 @@ public class GameBoy {
 			return;
 		}
 		
+		// NR10 - NR52 (APU)
+		if (address >= 0xFF10 && address <= 0xFF3F) {
+			cpu.setRawMem(address, value);
+			apu.writeRegister(address, value);
+			return;
+		}
+
 		// Normal memory write
 		cpu.setRawMem(address, value);
 	}
@@ -319,6 +331,10 @@ public class GameBoy {
 
 	public Joypad getJoypad() {
 		return joypad;
+	}
+
+	public Apu getApu() {
+		return apu;
 	}
 
 	public MBC getMBC() {
