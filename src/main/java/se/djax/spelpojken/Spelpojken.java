@@ -12,9 +12,24 @@ public class Spelpojken {
 
 	public static void main(String[] args) {
 		try {
-			File file = new File(Spelpojken.class.getResource("/cpu_instrs.gb").toURI());
 			GameBoy gameBoy = new GameBoy();
-			gameBoy.loadRom(file);
+
+			if (args.length > 0) {
+				File romFile = new File(args[0]);
+				if (!romFile.exists()) {
+					System.err.println("Filen hittades inte: " + args[0]);
+					System.exit(1);
+				}
+				gameBoy.loadRom(romFile);
+			} else {
+				var romStream = Spelpojken.class.getResourceAsStream("/cpu_instrs.gb");
+				if (romStream == null) {
+					throw new RuntimeException("Could not find internal cpu_instrs.gb and no ROM provided in arguments");
+				}
+				byte[] romData = romStream.readAllBytes();
+				gameBoy.loadRom(romData);
+			}
+
 			new MemoryForm(gameBoy);
 
 			Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();

@@ -27,6 +27,7 @@ public class GameBoy {
 	private MBC mbc;
 	private File romFile;
 	private short[] fullRomData;
+	private byte[] rawRomData;
 
 	public GameBoy() {
 		listeners = new ArrayList<>();
@@ -41,10 +42,9 @@ public class GameBoy {
 		mbc = new MBC(cpu);
 	}
 
-	public void loadRom(File file) {
-		romFile = file;
+	public void loadRom(byte[] data) {
 		try {
-			byte[] data = Files.readAllBytes(file.toPath());
+			this.rawRomData = data;
 			fullRomData = new short[data.length];
 			for (int i = 0; i < data.length; i++) {
 				fullRomData[i] = (short) Byte.toUnsignedInt(data[i]);
@@ -54,8 +54,24 @@ public class GameBoy {
 			mbc.init(fullRomData);
 			
 			// Load ROM into memory
-			cpu.loadRom(romFile, true);
+			byte[] bootData = null;
+			var bootRes = Cpu.class.getResourceAsStream("/DMG_ROM.gb");
+			if (bootRes != null) {
+				bootData = bootRes.readAllBytes();
+			}
+			cpu.loadRom(data, bootData);
 			
+			LOG.info("Loaded ROM data (" + data.length + " bytes)");
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load ROM", e);
+		}
+	}
+
+	public void loadRom(File file) {
+		romFile = file;
+		try {
+			byte[] data = Files.readAllBytes(file.toPath());
+			loadRom(data);
 			LOG.info("Loaded ROM: " + file.getName() + " (" + data.length + " bytes)");
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load ROM", e);
@@ -112,7 +128,7 @@ public class GameBoy {
 
 		// Disable boot rom when 0xFF50 is written to
 		if (cpu.getMem(0xFF50) == 1) {
-			cpu.loadRom(romFile, false);
+			cpu.loadRom(rawRomData, null);
 			cpu.setMem(0xFF50, (short) 0);
 			LOG.info("Boot rom disabled");
 		}

@@ -33,31 +33,44 @@ public class Cpu {
 		rom = new short[GameBoy.MEMORY_SIZE];
 	}
 
-	public void loadRom(File file, boolean withBootRom) {
+	public void loadRom(byte[] data, byte[] bootData) {
 		try {
-			Assert.assertTrue(file.exists());
-			byte[] data = Files.readAllBytes(file.toPath());
-
 			// init
 			for (int i = 0; i < rom.length; i++) {
 				// rom[i] = -1;
 			}
 
 			// load rom
-			for (int i = 0; i < data.length; i++) {
+			for (int i = 0; i < data.length && i < rom.length; i++) {
 				rom[i] = (short) Byte.toUnsignedInt(data[i]);
 			}
 
-			if (withBootRom) {
-				File boot = new File(Cpu.class.getResource("/DMG_ROM.gb").toURI());
-				Assert.assertTrue(boot.exists());
-				byte[] bootData = Files.readAllBytes(boot.toPath());
-				for (int i = 0; i < 256; i++) {
+			if (bootData != null) {
+				for (int i = 0; i < 256 && i < bootData.length; i++) {
 					rom[i] = (short) Byte.toUnsignedInt(bootData[i]);
 				}
 				LOG.info("Loaded boot rom");
 			}
 
+			LOG.info("Loaded rom size:" + data.length + " bytes");
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public void loadRom(File file, boolean withBootRom) {
+		try {
+			Assert.assertTrue(file.exists());
+			byte[] data = Files.readAllBytes(file.toPath());
+			byte[] bootData = null;
+
+			if (withBootRom) {
+				var bootRes = Cpu.class.getResourceAsStream("/DMG_ROM.gb");
+				if (bootRes != null) {
+					bootData = bootRes.readAllBytes();
+				}
+			}
+			loadRom(data, bootData);
 			LOG.info("Loaded rom:" + file.getAbsolutePath() + " size:" + data.length + " bytes");
 		} catch (Exception e) {
 			throw new RuntimeException(e);
