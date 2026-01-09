@@ -65,8 +65,8 @@ public class Spelpojken {
 			}
 
 			Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-			config.setWindowedMode(Gpu.WIDTH, Gpu.HEIGHT);
-			config.setWindowPosition(500, 800);
+			config.setWindowedMode(Gpu.WIDTH * 3, Gpu.HEIGHT * 3);
+			config.setWindowPosition(500, 300);
 
 			new Lwjgl3Application(new MainForm(gameBoy), config);
 		} catch (Exception e) {
