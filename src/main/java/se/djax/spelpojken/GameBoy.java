@@ -259,6 +259,17 @@ public class GameBoy {
 			joypad.write(value);
 			return;
 		}
+
+		// Serial port (Blargg's test output)
+		if (address == 0xFF01) {
+			cpu.setRawMem(address, value);
+			return;
+		}
+		if (address == 0xFF02 && value == 0x81) {
+			System.out.print((char) cpu.getRawMem(0xFF01));
+			cpu.setRawMem(0xFF02, (short) 0x01);
+			return;
+		}
 		
 		// DIV register - any write resets it
 		if (address == Timer.DIV_REGISTER) {

@@ -47,16 +47,10 @@ public class Spelpojken {
 					while (true) {
 						gameBoy.step();
 						steps++;
-						if (steps % 100000 == 0) {
-							System.out.println("PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase() + 
-								" SP: 0x" + Integer.toHexString(gameBoy.getCpu().sp).toUpperCase() +
-								" LY: " + gameBoy.getCpu().getRawMem(0xFF44) +
-								" IE: " + Integer.toHexString(gameBoy.getCpu().getRawMem(0xFFFF)) +
-								" IF: " + Integer.toHexString(gameBoy.getCpu().getRawMem(0xFF0F)) +
-								" IME: " + gameBoy.getInterrupts().isIME());
-						}
-						if (steps > 1000000) break;
+						if (steps > 50000000) break;
 					}
+					System.out.println("\nHeadless run finished.");
+					System.exit(0);
 				} catch (Exception e) {
 					System.err.println("Exception at PC: 0x" + Integer.toHexString(gameBoy.getCpu().pc).toUpperCase());
 					throw e;
