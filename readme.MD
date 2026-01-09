@@ -14,8 +14,8 @@ Detta är ett hobbyprojekt för att lära sig om Game Boy-hårdvara.
 ## Planerade Förbättringar
 
 ### 1. Komplett ljudstöd (APU)
-* Implementera Kanal 3 (Wave) och Kanal 4 (Noise).
-* Stöd för stereo-panorering och mastervolym (NR50/51).
+* [x] Implementera Kanal 3 (Wave) och Kanal 4 (Noise).
+* [x] Stöd för stereo-panorering och mastervolym (NR50/51).
 
 ### 2. Cykel-exakt timing (Accuracy)
 * Refaktorera CPU för att hantera M-cykler (4 T-cykler per steg).
