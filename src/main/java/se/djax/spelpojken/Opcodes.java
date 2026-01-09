@@ -11,13 +11,13 @@ public class Opcodes {
 		public final String name;
 		public final int cycles;
 		public final Code code;
-		public final int lenght;
+		public final int length;
 
-		public Opcode(String name, int cycles, int lenght, Code code) {
+		public Opcode(String name, int cycles, int length, Code code) {
 			this.name = name;
 			this.cycles = cycles;
 			this.code = code;
-			this.lenght = lenght;
+			this.length = length;
 		}
 	}
 
@@ -57,10 +57,10 @@ public class Opcodes {
 			boolean bit7 = cpu.getBit(cpu.a, 7);
 			cpu.a = (short) ((cpu.a << 1) & 0xFF);
 			if (bit7) cpu.a = (short) cpu.setBit(cpu.a, 0);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, bit7);
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, bit7);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 		});
 		opcodes[0x08] = create("LD (a16),SP", 20, 3, () -> {
 			int addr = cpu.get16bitValue(cpu.pc + 1);
@@ -83,10 +83,10 @@ public class Opcodes {
 			boolean bit0 = cpu.getBit(cpu.a, 0);
 			cpu.a = (short) ((cpu.a >> 1) & 0x7F);
 			if (bit0) cpu.a = (short) cpu.setBit(cpu.a, 7);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, bit0);
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, bit0);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 		});
 
 		// 0x10 - 0x1F
@@ -110,10 +110,10 @@ public class Opcodes {
 			boolean bit7 = cpu.getBit(cpu.a, 7);
 			cpu.a = (short) ((cpu.a << 1) & 0xFF);
 			if (carry) cpu.a = (short) cpu.setBit(cpu.a, 0);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, bit7);
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, bit7);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 		});
 		opcodes[0x18] = create("JR r8", 12, 2, () -> {
 			byte i = (byte) cpu.getMem(cpu.pc + 1);
@@ -136,10 +136,10 @@ public class Opcodes {
 			boolean bit0 = cpu.getBit(cpu.a, 0);
 			cpu.a = (short) ((cpu.a >> 1) & 0x7F);
 			if (carry) cpu.a = (short) cpu.setBit(cpu.a, 7);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, bit0);
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, bit0);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 		});
 
 		// 0x20 - 0x2F
@@ -186,8 +186,8 @@ public class Opcodes {
 		opcodes[0x2E] = create("LD L,d8", 8, 2, () -> cpu.setRegister("L", cpu.getMem(cpu.pc + 1)));
 		opcodes[0x2F] = create("CPL", 4, 1, () -> {
 			cpu.setRegister("A", cpu.cpl(cpu.getRegister("A")));
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, true);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, true);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, true);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, true);
 		});
 
 		// 0x30 - 0x3F
@@ -541,10 +541,10 @@ public class Opcodes {
 		opcodes[0xE8] = create("ADD SP,r8", 16, 2, () -> {
 			byte n = (byte) cpu.getMem(cpu.pc + 1);
 			int result = cpu.sp + n;
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, ((cpu.sp & 0x0F) + (n & 0x0F)) > 0x0F);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, ((cpu.sp & 0xFF) + (n & 0xFF)) > 0xFF);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, ((cpu.sp & 0x0F) + (n & 0x0F)) > 0x0F);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, ((cpu.sp & 0xFF) + (n & 0xFF)) > 0xFF);
 			cpu.sp = result & 0xFFFF;
 		});
 		opcodes[0xE9] = create("JP (HL)", 4, 0, () -> {
@@ -582,10 +582,10 @@ public class Opcodes {
 		opcodes[0xF6] = create("OR d8", 8, 2, () -> {
 			short val = cpu.getMem(cpu.pc + 1);
 			val = (short) (val | cpu.getRegister("A"));
-			cpu.toogleFlag(Cpu.FLAG_ZERO, val == 0);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, val == 0);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 			cpu.setRegister("A", val);
 		});
 		opcodes[0xF7] = create("RST 30H", 16, 0, () -> {
@@ -595,10 +595,10 @@ public class Opcodes {
 		opcodes[0xF8] = create("LD HL,SP+r8", 12, 2, () -> {
 			byte n = (byte) cpu.getMem(cpu.pc + 1);
 			int result = cpu.sp + n;
-			cpu.toogleFlag(Cpu.FLAG_ZERO, false);
-			cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, ((cpu.sp & 0x0F) + (n & 0x0F)) > 0x0F);
-			cpu.toogleFlag(Cpu.FLAG_CARRY, ((cpu.sp & 0xFF) + (n & 0xFF)) > 0xFF);
+			cpu.toggleFlag(Cpu.FLAG_ZERO, false);
+			cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, ((cpu.sp & 0x0F) + (n & 0x0F)) > 0x0F);
+			cpu.toggleFlag(Cpu.FLAG_CARRY, ((cpu.sp & 0xFF) + (n & 0xFF)) > 0xFF);
 			cpu.set16BitRegister("H", "L", result & 0xFFFF);
 		});
 		opcodes[0xF9] = create("LD SP,HL", 8, 1, () -> {
@@ -693,9 +693,9 @@ public class Opcodes {
 				final int b = bit;
 				opcodesCB[0x40 + bit * 8 + i] = create("BIT " + bit + "," + reg, c, 2, () -> {
 					short val = cpu.getRegister(reg);
-					cpu.toogleFlag(Cpu.FLAG_ZERO, !cpu.getBit(val, b));
-					cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-					cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, true);
+					cpu.toggleFlag(Cpu.FLAG_ZERO, !cpu.getBit(val, b));
+					cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+					cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, true);
 				});
 			}
 		}
@@ -747,15 +747,9 @@ public class Opcodes {
 				" at PC: " + Integer.toHexString(cpu.pc).toUpperCase() + " CB: " + isCB);
 		}
 
-		try {
-			opcode.code.exec();
-			cpu.pc += opcode.lenght;
-			return opcode.cycles;
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException(
-					"Error executing opcode: " + Integer.toHexString(i) + " - " + opcode.name + " : " + e.getMessage());
-		}
+		opcode.code.exec();
+		cpu.pc += opcode.length;
+		return opcode.cycles;
 	}
 
 	public Opcode getOpcode(int index, boolean cb) {
@@ -766,7 +760,7 @@ public class Opcodes {
 		}
 	}
 
-	private Opcode create(String name, int cycles, int lenght, Code code) {
-		return new Opcode(name, cycles, lenght, code);
+	private Opcode create(String name, int cycles, int length, Code code) {
+		return new Opcode(name, cycles, length, code);
 	}
 }

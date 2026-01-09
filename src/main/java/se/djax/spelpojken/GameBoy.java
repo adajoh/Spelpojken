@@ -86,10 +86,10 @@ public class GameBoy {
 				cpu.e = 0xD8;
 				cpu.h = 0x01;
 				cpu.l = 0x4D;
-				cpu.toogleFlag(Cpu.FLAG_ZERO, true);
-				cpu.toogleFlag(Cpu.FLAG_SUBTRACT, false);
-				cpu.toogleFlag(Cpu.FLAG_HALF_CARRY, true);
-				cpu.toogleFlag(Cpu.FLAG_CARRY, true);
+				cpu.toggleFlag(Cpu.FLAG_ZERO, true);
+				cpu.toggleFlag(Cpu.FLAG_SUBTRACT, false);
+				cpu.toggleFlag(Cpu.FLAG_HALF_CARRY, true);
+				cpu.toggleFlag(Cpu.FLAG_CARRY, true);
 				
 				// Set some default I/O register values
 				cpu.setRawMem(0xFF05, (short) 0x00); // TIMA

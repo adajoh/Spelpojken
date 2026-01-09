@@ -98,12 +98,12 @@ public class Cpu {
 	public void inc(String register) {
 		short i = getRegister(register);
 
-		toogleFlag(FLAG_HALF_CARRY, (i & 0x0F) == 0x0F);
+		toggleFlag(FLAG_HALF_CARRY, (i & 0x0F) == 0x0F);
 
 		i = (short) ((i + 1) & 0xFF);
 
-		toogleFlag(FLAG_ZERO, i == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_ZERO, i == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
 
 		setRegister(register, i);
 	}
@@ -111,67 +111,64 @@ public class Cpu {
 	public void dec(String register) {
 		short i = getRegister(register);
 
-		toogleFlag(FLAG_HALF_CARRY, (i & 0x0F) == 0);
+		toggleFlag(FLAG_HALF_CARRY, (i & 0x0F) == 0);
 
 		i = (short) ((i - 1) & 0xFF);
 
-		toogleFlag(FLAG_ZERO, i == 0);
-		toogleFlag(FLAG_SUBTRACT, true);
+		toggleFlag(FLAG_ZERO, i == 0);
+		toggleFlag(FLAG_SUBTRACT, true);
 
 		setRegister(register, i);
 	}
 
 	public void subN(short val) {
-		short a = getRegister("A");
 		int result = a - val;
 		
-		toogleFlag(FLAG_HALF_CARRY, (a & 0x0F) < (val & 0x0F));
-		toogleFlag(FLAG_CARRY, result < 0);
+		toggleFlag(FLAG_HALF_CARRY, (a & 0x0F) < (val & 0x0F));
+		toggleFlag(FLAG_CARRY, result < 0);
 		
 		result &= 0xFF;
 
-		toogleFlag(FLAG_ZERO, result == 0);
-		toogleFlag(FLAG_SUBTRACT, true);
+		toggleFlag(FLAG_ZERO, result == 0);
+		toggleFlag(FLAG_SUBTRACT, true);
 
-		setRegister("A", (short) result);
+		a = (short) result;
 	}
 
 	/**
 	 * Add with carry: A = A + n + carry
 	 */
 	public void adcN(short val) {
-		short a = getRegister("A");
 		int carry = getFlag(FLAG_CARRY) ? 1 : 0;
 		int result = a + val + carry;
 		
-		toogleFlag(FLAG_HALF_CARRY, ((a & 0x0F) + (val & 0x0F) + carry) > 0x0F);
-		toogleFlag(FLAG_CARRY, result > 0xFF);
+		toggleFlag(FLAG_HALF_CARRY, ((a & 0x0F) + (val & 0x0F) + carry) > 0x0F);
+		toggleFlag(FLAG_CARRY, result > 0xFF);
 		
 		result &= 0xFF;
 		
-		toogleFlag(FLAG_ZERO, result == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_ZERO, result == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
 		
-		setRegister("A", (short) result);
+		a = (short) result;
 	}
 
 	/**
 	 * Subtract with carry: A = A - n - carry
 	 */
 	public void sbcN(short val) {
-		short a = getRegister("A");
 		int carry = getFlag(FLAG_CARRY) ? 1 : 0;
 		int result = a - val - carry;
 		
-		toogleFlag(FLAG_HALF_CARRY, ((a & 0x0F) - (val & 0x0F) - carry) < 0);
-		toogleFlag(FLAG_CARRY, result < 0);
+		toggleFlag(FLAG_HALF_CARRY, ((a & 0x0F) - (val & 0x0F) - carry) < 0);
+		toggleFlag(FLAG_CARRY, result < 0);
 		
 		result &= 0xFF;
 		
-		toogleFlag(FLAG_ZERO, result == 0);
-		toogleFlag(FLAG_SUBTRACT, true);
+		toggleFlag(FLAG_ZERO, result == 0);
+		toggleFlag(FLAG_SUBTRACT, true);
 		
-		setRegister("A", (short) result);
+		a = (short) result;
 	}
 
 	/**
@@ -179,48 +176,48 @@ public class Cpu {
 	 * Adjusts the result of a binary addition/subtraction to BCD
 	 */
 	public void daa() {
-		int a = getRegister("A");
+		int val = a;
 		int correction = 0;
 		boolean setCarry = false;
 		
-		if (getFlag(FLAG_HALF_CARRY) || (!getFlag(FLAG_SUBTRACT) && (a & 0x0F) > 0x09)) {
+		if (getFlag(FLAG_HALF_CARRY) || (!getFlag(FLAG_SUBTRACT) && (val & 0x0F) > 0x09)) {
 			correction |= 0x06;
 		}
 		
-		if (getFlag(FLAG_CARRY) || (!getFlag(FLAG_SUBTRACT) && a > 0x99)) {
+		if (getFlag(FLAG_CARRY) || (!getFlag(FLAG_SUBTRACT) && val > 0x99)) {
 			correction |= 0x60;
 			setCarry = true;
 		}
 		
 		if (getFlag(FLAG_SUBTRACT)) {
-			a = (a - correction) & 0xFF;
+			val = (val - correction) & 0xFF;
 		} else {
-			a = (a + correction) & 0xFF;
+			val = (val + correction) & 0xFF;
 		}
 		
-		toogleFlag(FLAG_ZERO, a == 0);
-		toogleFlag(FLAG_HALF_CARRY, false);
-		toogleFlag(FLAG_CARRY, setCarry);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_CARRY, setCarry);
 		
-		setRegister("A", (short) a);
+		a = (short) val;
 	}
 
 	/**
 	 * Set Carry Flag
 	 */
 	public void scf() {
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
-		toogleFlag(FLAG_CARRY, true);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_CARRY, true);
 	}
 
 	/**
 	 * Complement Carry Flag
 	 */
 	public void ccf() {
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
-		toogleFlag(FLAG_CARRY, !getFlag(FLAG_CARRY));
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_CARRY, !getFlag(FLAG_CARRY));
 	}
 
 	/**
@@ -235,10 +232,10 @@ public class Cpu {
 			val = (short) setBit(val, 0);
 		}
 		
-		toogleFlag(FLAG_CARRY, bit7);
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_CARRY, bit7);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
 		
 		setRegister(register, val);
 	}
@@ -255,10 +252,10 @@ public class Cpu {
 			val = (short) setBit(val, 7);
 		}
 		
-		toogleFlag(FLAG_CARRY, bit0);
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_CARRY, bit0);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
 		
 		setRegister(register, val);
 	}
@@ -268,13 +265,13 @@ public class Cpu {
 	 */
 	public void sla(String register) {
 		short val = getRegister(register);
-		toogleFlag(FLAG_CARRY, getBit(val, 7));
+		toggleFlag(FLAG_CARRY, getBit(val, 7));
 		
 		val = (short) ((val << 1) & 0xFF);
 		
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
 		
 		setRegister(register, val);
 	}
@@ -285,16 +282,16 @@ public class Cpu {
 	public void sra(String register) {
 		short val = getRegister(register);
 		boolean bit7 = getBit(val, 7);
-		toogleFlag(FLAG_CARRY, getBit(val, 0));
+		toggleFlag(FLAG_CARRY, getBit(val, 0));
 		
 		val = (short) ((val >> 1) & 0x7F);
 		if (bit7) {
 			val = (short) setBit(val, 7);
 		}
 		
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
 		
 		setRegister(register, val);
 	}
@@ -307,33 +304,33 @@ public class Cpu {
 	}
 
 	public void andN(short val) {
-		val = (short) (val & getRegister("A"));
+		val = (short) (val & a);
 
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, true);
-		toogleFlag(FLAG_CARRY, false);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, true);
+		toggleFlag(FLAG_CARRY, false);
 
-		setRegister("A", val);
+		a = val;
 	}
 
 	public void xorN(short val) {
-		val = (short) (val ^ getRegister("A"));
+		val = (short) (val ^ a);
 
-		toogleFlag(FLAG_ZERO, val == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false); // XOR always clears H flag
-		toogleFlag(FLAG_CARRY, false);
+		toggleFlag(FLAG_ZERO, val == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false); // XOR always clears H flag
+		toggleFlag(FLAG_CARRY, false);
 
-		setRegister("A", val);
+		a = val;
 	}
 
 	public short swap(short i) {
 		i = (short) (((i & 0x0F) << 4) | ((i & 0xF0) >> 4));
-		toogleFlag(FLAG_ZERO, i == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_HALF_CARRY, false); // SWAP clears all flags except Z
-		toogleFlag(FLAG_CARRY, false);
+		toggleFlag(FLAG_ZERO, i == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_HALF_CARRY, false); // SWAP clears all flags except Z
+		toggleFlag(FLAG_CARRY, false);
 
 		return i;
 	}
@@ -341,29 +338,28 @@ public class Cpu {
 	public void orN(String register) {
 		short i = getRegister(register);
 
-		i = (short) (i | getRegister("A"));
+		i = (short) (i | a);
 
-		toogleFlag(FLAG_ZERO, i == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
-		toogleFlag(FLAG_CARRY, false);
-		toogleFlag(FLAG_HALF_CARRY, false);
+		toggleFlag(FLAG_ZERO, i == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_CARRY, false);
+		toggleFlag(FLAG_HALF_CARRY, false);
 
-		setRegister("A", i);
+		a = i;
 	}
 
 	public void addN(short val) {
-		short a = getRegister("A");
 		int result = a + val;
 		
-		toogleFlag(FLAG_HALF_CARRY, ((a & 0x0F) + (val & 0x0F)) > 0x0F);
-		toogleFlag(FLAG_CARRY, result > 0xFF);
+		toggleFlag(FLAG_HALF_CARRY, ((a & 0x0F) + (val & 0x0F)) > 0x0F);
+		toggleFlag(FLAG_CARRY, result > 0xFF);
 
 		result &= 0xFF;
 
-		toogleFlag(FLAG_ZERO, result == 0);
-		toogleFlag(FLAG_SUBTRACT, false);
+		toggleFlag(FLAG_ZERO, result == 0);
+		toggleFlag(FLAG_SUBTRACT, false);
 
-		setRegister("A", (short) result);
+		a = (short) result;
 	}
 
 	public short add8Bit(short i, short j) {
@@ -380,9 +376,9 @@ public class Cpu {
 		int result = i + j;
 
 		if (updateFlags) {
-			toogleFlag(Cpu.FLAG_SUBTRACT, false);
-			toogleFlag(Cpu.FLAG_HALF_CARRY, ((i & 0x0FFF) + (j & 0x0FFF)) > 0x0FFF);
-			toogleFlag(Cpu.FLAG_CARRY, result > 0xFFFF);
+			toggleFlag(Cpu.FLAG_SUBTRACT, false);
+			toggleFlag(Cpu.FLAG_HALF_CARRY, ((i & 0x0FFF) + (j & 0x0FFF)) > 0x0FFF);
+			toggleFlag(Cpu.FLAG_CARRY, result > 0xFFFF);
 		}
 
 		return result & 0xFFFF;
@@ -396,10 +392,10 @@ public class Cpu {
 	public void cp(short i, short j) {
 		int result = i - j;
 
-		toogleFlag(Cpu.FLAG_ZERO, result == 0);
-		toogleFlag(Cpu.FLAG_SUBTRACT, true);
-		toogleFlag(Cpu.FLAG_HALF_CARRY, (i & 0x0F) < (j & 0x0F));
-		toogleFlag(Cpu.FLAG_CARRY, i < j);
+		toggleFlag(Cpu.FLAG_ZERO, result == 0);
+		toggleFlag(Cpu.FLAG_SUBTRACT, true);
+		toggleFlag(Cpu.FLAG_HALF_CARRY, (i & 0x0F) < (j & 0x0F));
+		toggleFlag(Cpu.FLAG_CARRY, i < j);
 	}
 
 	public short getRegister(String reg) {
@@ -430,17 +426,17 @@ public class Cpu {
 	}
 
 	public short srl(short val) {
-		toogleFlag(FLAG_CARRY, getBit(val, 0));
+		toggleFlag(FLAG_CARRY, getBit(val, 0));
 		val = (short) ((val >> 1) & 0x7F); // Shift right, MSB becomes 0
 
-		toogleFlag(Cpu.FLAG_ZERO, val == 0);
-		toogleFlag(Cpu.FLAG_SUBTRACT, false);
-		toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+		toggleFlag(Cpu.FLAG_ZERO, val == 0);
+		toggleFlag(Cpu.FLAG_SUBTRACT, false);
+		toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 
 		return val;
 	}
 
-	public void toogleFlag(int flag, boolean val) {
+	public void toggleFlag(int flag, boolean val) {
 		if (val) {
 			f = (short) setBit(f, flag);
 		} else {
@@ -509,7 +505,7 @@ public class Cpu {
 		short i = getRegister(register);
 
 		boolean carry = getFlag(Cpu.FLAG_CARRY);
-		toogleFlag(Cpu.FLAG_CARRY, getBit(i, 7));
+		toggleFlag(Cpu.FLAG_CARRY, getBit(i, 7));
 
 		i = (short) ((i << 1) & 0xFF);
 
@@ -517,9 +513,9 @@ public class Cpu {
 			i = (short) setBit(i, 0);
 		}
 
-		toogleFlag(Cpu.FLAG_ZERO, i == 0);
-		toogleFlag(Cpu.FLAG_SUBTRACT, false);
-		toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+		toggleFlag(Cpu.FLAG_ZERO, i == 0);
+		toggleFlag(Cpu.FLAG_SUBTRACT, false);
+		toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 
 		setRegister(register, i);
 	}
@@ -528,7 +524,7 @@ public class Cpu {
 		short i = getRegister(register);
 
 		boolean carry = getFlag(Cpu.FLAG_CARRY);
-		toogleFlag(Cpu.FLAG_CARRY, getBit(i, 0)); // Check bit 0 for carry
+		toggleFlag(Cpu.FLAG_CARRY, getBit(i, 0)); // Check bit 0 for carry
 
 		i = (short) ((i >> 1) & 0x7F); // Shift right
 
@@ -536,9 +532,9 @@ public class Cpu {
 			i = (short) setBit(i, 7); // Old carry goes to bit 7
 		}
 
-		toogleFlag(Cpu.FLAG_ZERO, i == 0);
-		toogleFlag(Cpu.FLAG_SUBTRACT, false);
-		toogleFlag(Cpu.FLAG_HALF_CARRY, false);
+		toggleFlag(Cpu.FLAG_ZERO, i == 0);
+		toggleFlag(Cpu.FLAG_SUBTRACT, false);
+		toggleFlag(Cpu.FLAG_HALF_CARRY, false);
 
 		setRegister(register, i);
 	}
@@ -571,13 +567,13 @@ public class Cpu {
 	public int get16BitRegister(String reg) {
 		switch (reg) {
 		case "AF":
-			return get16bitValue(getRegister("A"), getRegister("F"));
+			return get16bitValue(a, f);
 		case "BC":
-			return get16bitValue(getRegister("B"), getRegister("C"));
+			return get16bitValue(b, c);
 		case "HL":
-			return get16bitValue(getRegister("H"), getRegister("L"));
+			return get16bitValue(h, l);
 		case "DE":
-			return get16bitValue(getRegister("D"), getRegister("E"));
+			return get16bitValue(d, e);
 		default:
 			throw new RuntimeException("Unknown register pair:" + reg);
 		}
