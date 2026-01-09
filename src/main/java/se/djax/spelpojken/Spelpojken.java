@@ -14,11 +14,14 @@ public class Spelpojken {
 		try {
 			GameBoy gameBoy = new GameBoy();
 			boolean headless = false;
+			boolean showMemoryForm = true;
 			String romPath = null;
 
 			for (String arg : args) {
 				if (arg.equals("--headless")) {
 					headless = true;
+				} else if (arg.equals("--no-memory-form")) {
+					showMemoryForm = false;
 				} else if (romPath == null) {
 					romPath = arg;
 				}
@@ -57,7 +60,9 @@ public class Spelpojken {
 				}
 			}
 
-			new MemoryForm(gameBoy);
+			if (showMemoryForm && !headless) {
+				new MemoryForm(gameBoy);
+			}
 
 			Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 			config.setWindowedMode(Gpu.WIDTH, Gpu.HEIGHT);
