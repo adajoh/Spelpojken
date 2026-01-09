@@ -244,10 +244,22 @@ public class Apu {
             buffer[bufferPtr++] = left * 0.25f * volL;
             buffer[bufferPtr++] = right * 0.25f * volR;
             
-            if (bufferPtr >= BUFFER_SIZE) {
-                if (audioDevice != null) audioDevice.writeSamples(buffer, 0, BUFFER_SIZE);
+			if (bufferPtr >= BUFFER_SIZE) {
+                if (audioDevice != null) {
+                    audioDevice.writeSamples(buffer, 0, BUFFER_SIZE);
+                }
                 bufferPtr = 0;
             }
+        }
+    }
+
+    public void sync() {
+        if (audioDevice != null && bufferPtr > 0) {
+            // Write remaining samples in buffer
+            float[] remaining = new float[bufferPtr];
+            System.arraycopy(buffer, 0, remaining, 0, bufferPtr);
+            audioDevice.writeSamples(remaining, 0, bufferPtr);
+            bufferPtr = 0;
         }
     }
 

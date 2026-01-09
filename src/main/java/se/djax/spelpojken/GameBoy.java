@@ -376,5 +376,8 @@ public class GameBoy {
 		while (cyclesRun < targetCycles) {
 			cyclesRun += step();
 		}
+		
+		// Wait for audio device to catch up if it's falling behind
+		apu.sync();
 	}
 }
