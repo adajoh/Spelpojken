@@ -36,5 +36,8 @@ Detta är ett hobbyprojekt för att lära sig om Game Boy-hårdvara.
 * Save States (Serialisering av emulatorns tillstånd).
 * Skalning av fönster och enkla grafikfilter.
 
+### 6. Prestanda
+* [x] Implementera frame limiter (59.73 FPS) för korrekt hastighet.
+
 ---
 *Status och framsteg loggas löpande i detta dokument.*

@@ -26,6 +26,9 @@ public class MainForm extends ApplicationAdapter {
 	private OrthographicCamera camera;
 	private Viewport viewport;
 
+	private float accumulator = 0;
+	private static final float TIME_PER_FRAME = 1f / 59.73f;
+
 	public MainForm(GameBoy gameBoy) {
 		this.gameBoy = gameBoy;
 	}
@@ -47,7 +50,15 @@ public class MainForm extends ApplicationAdapter {
 	public void render() {
 		// Update GameBoy
 		handleInput();
-		gameBoy.runFrame();
+
+		float delta = Gdx.graphics.getDeltaTime();
+		if (delta > 0.1f) delta = 0.1f; // Cap max frame time to avoid spiral of death
+		accumulator += delta;
+
+		while (accumulator >= TIME_PER_FRAME) {
+			gameBoy.runFrame();
+			accumulator -= TIME_PER_FRAME;
+		}
 
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
