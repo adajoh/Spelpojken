@@ -48,8 +48,8 @@ public class Gpu {
 	};
 
 	private final Cpu cpu;
-	private final int[] pixelData;
-	private final int[] bgPixelColorIndex;
+	private final int[][] pixelData;
+	private final int[][] bgPixelColorIndex;
 	private Interrupts interrupts;
 
 	private int scanLineCyclesCounter = 0;
@@ -58,8 +58,8 @@ public class Gpu {
 
 	public Gpu(Cpu cpu) {
 		this.cpu = cpu;
-		pixelData = new int[WIDTH * HEIGHT];
-		bgPixelColorIndex = new int[WIDTH * HEIGHT];
+		pixelData = new int[WIDTH][HEIGHT];
+		bgPixelColorIndex = new int[WIDTH][HEIGHT];
 	}
 
 	public void setInterrupts(Interrupts interrupts) {
@@ -74,7 +74,7 @@ public class Gpu {
 		if (!isLCDEnabled()) {
 			// LCD disabled - reset everything
 			scanLineCyclesCounter = 0;
-			cpu.rom[REG_LY] = 0;
+			cpu.setMem(REG_LY, (short) 0);
 			setMode(MODE_HBLANK);
 			return;
 		}
@@ -94,7 +94,7 @@ public class Gpu {
 					scanLineCyclesCounter -= CYCLES_PIXEL_TRANSFER;
 					
 					// Draw the current scanline
-					int ly = cpu.rom[REG_LY];
+					int ly = cpu.getMem(REG_LY);
 					if (ly < HEIGHT) {
 						drawScanline(ly);
 					}
@@ -102,7 +102,7 @@ public class Gpu {
 					setMode(MODE_HBLANK);
 					
 					// Request STAT interrupt for HBlank if enabled
-					if (interrupts != null && (cpu.rom[REG_STAT] & 0x08) != 0) {
+					if (interrupts != null && (cpu.getMem(REG_STAT) & 0x08) != 0) {
 						interrupts.requestInterrupt(Interrupts.LCD_STAT);
 					}
 				}
@@ -113,8 +113,8 @@ public class Gpu {
 					scanLineCyclesCounter -= CYCLES_HBLANK;
 					
 					// Move to next line
-					int ly = cpu.rom[REG_LY] + 1;
-					cpu.rom[REG_LY] = (short) ly;
+					int ly = cpu.getMem(REG_LY) + 1;
+					cpu.setMem(REG_LY, (short) ly);
 					
 					checkLYC();
 					
@@ -128,7 +128,7 @@ public class Gpu {
 							interrupts.requestInterrupt(Interrupts.VBLANK);
 							
 							// Also STAT interrupt if VBlank flag is set
-							if ((cpu.rom[REG_STAT] & 0x10) != 0) {
+							if ((cpu.getMem(REG_STAT) & 0x10) != 0) {
 								interrupts.requestInterrupt(Interrupts.LCD_STAT);
 							}
 						}
@@ -136,7 +136,7 @@ public class Gpu {
 						setMode(MODE_OAM_SEARCH);
 						
 						// Request STAT interrupt for OAM if enabled
-						if (interrupts != null && (cpu.rom[REG_STAT] & 0x20) != 0) {
+						if (interrupts != null && (cpu.getMem(REG_STAT) & 0x20) != 0) {
 							interrupts.requestInterrupt(Interrupts.LCD_STAT);
 						}
 					}
@@ -147,20 +147,20 @@ public class Gpu {
 				if (scanLineCyclesCounter >= CYCLES_VBLANK_LINE) {
 					scanLineCyclesCounter -= CYCLES_VBLANK_LINE;
 					
-					int ly = cpu.rom[REG_LY] + 1;
+					int ly = cpu.getMem(REG_LY) + 1;
 					
 					if (ly > 153) {
 						// VBlank finished, start new frame
 						ly = 0;
-						cpu.rom[REG_LY] = 0;
+						cpu.setMem(REG_LY, (short) 0);
 						setMode(MODE_OAM_SEARCH);
 						
 						// Request STAT interrupt for OAM if enabled
-						if (interrupts != null && (cpu.rom[REG_STAT] & 0x20) != 0) {
+						if (interrupts != null && (cpu.getMem(REG_STAT) & 0x20) != 0) {
 							interrupts.requestInterrupt(Interrupts.LCD_STAT);
 						}
 					} else {
-						cpu.rom[REG_LY] = (short) ly;
+						cpu.setMem(REG_LY, (short) ly);
 					}
 					
 					checkLYC();
@@ -171,20 +171,20 @@ public class Gpu {
 
 	private void setMode(int mode) {
 		currentMode = mode;
-		int stat = cpu.rom[REG_STAT];
+		int stat = cpu.getMem(REG_STAT);
 		stat = (stat & 0xFC) | mode;
-		cpu.rom[REG_STAT] = (short) stat;
+		cpu.setMem(REG_STAT, (short) stat);
 	}
 
 	private void checkLYC() {
-		int ly = cpu.rom[REG_LY];
-		int lyc = cpu.rom[REG_LYC];
-		int stat = cpu.rom[REG_STAT];
+		int ly = cpu.getMem(REG_LY);
+		int lyc = cpu.getMem(REG_LYC);
+		int stat = cpu.getMem(REG_STAT);
 		
 		if (ly == lyc) {
 			// Set coincidence flag
 			stat |= 0x04;
-			cpu.rom[REG_STAT] = (short) stat;
+			cpu.setMem(REG_STAT, (short) stat);
 			
 			// Request STAT interrupt if LYC=LY interrupt is enabled
 			if (interrupts != null && (stat & 0x40) != 0) {
@@ -193,16 +193,16 @@ public class Gpu {
 		} else {
 			// Clear coincidence flag
 			stat &= ~0x04;
-			cpu.rom[REG_STAT] = (short) stat;
+			cpu.setMem(REG_STAT, (short) stat);
 		}
 	}
 
 	private boolean isLCDEnabled() {
-		return (cpu.rom[REG_LCDC] & 0x80) != 0;
+		return cpu.getBit(cpu.getMem(REG_LCDC), 7);
 	}
 
 	private void drawScanline(int line) {
-		int lcdc = cpu.rom[REG_LCDC];
+		int lcdc = cpu.getMem(REG_LCDC);
 		
 		// Draw background
 		if ((lcdc & 0x01) != 0) {
@@ -214,10 +214,9 @@ public class Gpu {
 			}
 		} else {
 			// Fill with white if BG disabled
-			int offset = line * WIDTH;
 			for (int x = 0; x < WIDTH; x++) {
-				pixelData[offset + x] = COLORS[0];
-				bgPixelColorIndex[offset + x] = 0;
+				pixelData[x][line] = COLORS[0];
+				bgPixelColorIndex[x][line] = 0;
 			}
 		}
 		
@@ -228,10 +227,10 @@ public class Gpu {
 	}
 
 	private void drawBackground(int line) {
-		int lcdc = cpu.rom[REG_LCDC];
-		int scrollY = cpu.rom[REG_SCY];
-		int scrollX = cpu.rom[REG_SCX];
-		int bgp = cpu.rom[REG_BGP];
+		int lcdc = cpu.getMem(REG_LCDC);
+		int scrollY = cpu.getMem(REG_SCY);
+		int scrollX = cpu.getMem(REG_SCX);
+		int bgp = cpu.getMem(REG_BGP);
 		
 		// Tile data address
 		int tileDataAddress = (lcdc & 0x10) != 0 ? 0x8000 : 0x8800;
@@ -242,14 +241,12 @@ public class Gpu {
 		
 		int y = (scrollY + line) & 0xFF;
 		int tileRow = (y / 8) * 32;
-		int tileY = (y % 8) * 2;
-		int offset = line * WIDTH;
 		
 		for (int pixel = 0; pixel < WIDTH; pixel++) {
 			int x = (scrollX + pixel) & 0xFF;
 			int tileCol = x / 8;
 			
-			int tileIndex = cpu.rom[tileMapAddress + tileRow + tileCol];
+			int tileIndex = cpu.getMem(tileMapAddress + tileRow + tileCol);
 			
 			int tileAddress;
 			if (signedTileNumbers) {
@@ -258,29 +255,30 @@ public class Gpu {
 				tileAddress = tileDataAddress + tileIndex * 16;
 			}
 			
-			int data1 = cpu.rom[tileAddress + tileY];
-			int data2 = cpu.rom[tileAddress + tileY + 1];
+			int tileY = (y % 8) * 2;
+			int data1 = cpu.getMem(tileAddress + tileY);
+			int data2 = cpu.getMem(tileAddress + tileY + 1);
 			
 			int colorBit = 7 - (x % 8);
 			int colorNum = ((data2 >> colorBit) & 1) << 1 | ((data1 >> colorBit) & 1);
 			int color = (bgp >> (colorNum * 2)) & 0x03;
 			
-			pixelData[offset + pixel] = COLORS[color];
-			bgPixelColorIndex[offset + pixel] = colorNum;
+			pixelData[pixel][line] = COLORS[color];
+			bgPixelColorIndex[pixel][line] = colorNum;
 		}
 	}
 
 	private void drawWindow(int line) {
-		int lcdc = cpu.rom[REG_LCDC];
-		int windowY = cpu.rom[REG_WY];
-		int windowX = cpu.rom[REG_WX] - 7;
+		int lcdc = cpu.getMem(REG_LCDC);
+		int windowY = cpu.getMem(REG_WY);
+		int windowX = cpu.getMem(REG_WX) - 7;
 		
 		// Check if window is visible on this line
 		if (line < windowY || windowX >= WIDTH) {
 			return;
 		}
 		
-		int bgp = cpu.rom[REG_BGP];
+		int bgp = cpu.getMem(REG_BGP);
 		
 		// Tile data address
 		int tileDataAddress = (lcdc & 0x10) != 0 ? 0x8000 : 0x8800;
@@ -291,14 +289,12 @@ public class Gpu {
 		
 		int y = windowLineCounter;
 		int tileRow = (y / 8) * 32;
-		int tileY = (y % 8) * 2;
-		int offset = line * WIDTH;
 		
 		for (int pixel = Math.max(0, windowX); pixel < WIDTH; pixel++) {
 			int x = pixel - windowX;
 			int tileCol = x / 8;
 			
-			int tileIndex = cpu.rom[tileMapAddress + tileRow + tileCol];
+			int tileIndex = cpu.getMem(tileMapAddress + tileRow + tileCol);
 			
 			int tileAddress;
 			if (signedTileNumbers) {
@@ -307,76 +303,68 @@ public class Gpu {
 				tileAddress = tileDataAddress + tileIndex * 16;
 			}
 			
-			int data1 = cpu.rom[tileAddress + tileY];
-			int data2 = cpu.rom[tileAddress + tileY + 1];
+			int tileY = (y % 8) * 2;
+			int data1 = cpu.getMem(tileAddress + tileY);
+			int data2 = cpu.getMem(tileAddress + tileY + 1);
 			
 			int colorBit = 7 - (x % 8);
 			int colorNum = ((data2 >> colorBit) & 1) << 1 | ((data1 >> colorBit) & 1);
 			int color = (bgp >> (colorNum * 2)) & 0x03;
 			
-			pixelData[offset + pixel] = COLORS[color];
-			bgPixelColorIndex[offset + pixel] = colorNum;
+			pixelData[pixel][line] = COLORS[color];
+			bgPixelColorIndex[pixel][line] = colorNum;
 		}
 		
 		windowLineCounter++;
 	}
 
-	private final int[] spritesToDraw = new int[10];
 
 	private void drawSprites(int line) {
-		int lcdc = cpu.rom[REG_LCDC];
+		int lcdc = cpu.getMem(REG_LCDC);
 		int spriteHeight = (lcdc & 0x04) != 0 ? 16 : 8;
-		int numSprites = 0;
+		
+		// Collect up to 10 sprites on this line
+		class SpriteInfo {
+			int index;
+			int x;
+			int y;
+			int tile;
+			int attr;
+			SpriteInfo(int i, int x, int y, int t, int a) {
+				this.index = i; this.x = x; this.y = y; this.tile = t; this.attr = a;
+			}
+		}
+		java.util.List<SpriteInfo> spritesOnLine = new java.util.ArrayList<>();
 		
 		for (int sprite = 0; sprite < 40; sprite++) {
 			int oamAddress = 0xFE00 + sprite * 4;
-			int spriteY = cpu.rom[oamAddress] - 16;
+			int spriteY = cpu.getMem(oamAddress) - 16;
+			int spriteX = cpu.getMem(oamAddress + 1) - 8;
+			int tileIndex = cpu.getMem(oamAddress + 2);
+			int attributes = cpu.getMem(oamAddress + 3);
 			
 			if (line >= spriteY && line < spriteY + spriteHeight) {
-				spritesToDraw[numSprites++] = sprite;
-				if (numSprites >= 10) break;
+				spritesOnLine.add(new SpriteInfo(sprite, spriteX, spriteY, tileIndex, attributes));
+				if (spritesOnLine.size() >= 10) break;
 			}
 		}
 		
-		if (numSprites == 0) return;
-
 		// Sort sprites: largest X first, then largest index first (to draw them in reverse priority)
-		// Simple bubble sort since it's only 10 elements max
-		for (int i = 0; i < numSprites - 1; i++) {
-			for (int j = 0; j < numSprites - i - 1; j++) {
-				int s1 = spritesToDraw[j];
-				int s2 = spritesToDraw[j+1];
-				int s1x = cpu.rom[0xFE00 + s1 * 4 + 1];
-				int s2x = cpu.rom[0xFE00 + s2 * 4 + 1];
-				
-				boolean swap = false;
-				if (s1x > s2x) {
-					swap = true;
-				} else if (s1x == s2x) {
-					if (s1 > s2) swap = true;
-				}
-				
-				if (swap) {
-					spritesToDraw[j] = s2;
-					spritesToDraw[j+1] = s1;
-				}
-			}
-		}
+		spritesOnLine.sort((s1, s2) -> {
+			if (s1.x != s2.x) return Integer.compare(s2.x, s1.x);
+			return Integer.compare(s2.index, s1.index);
+		});
 		
-		int lineOffset = line * WIDTH;
-
-		for (int i = numSprites - 1; i >= 0; i--) {
-			int spriteIndex = spritesToDraw[i];
-			int oamAddress = 0xFE00 + spriteIndex * 4;
-			int spriteY = cpu.rom[oamAddress] - 16;
-			int spriteX = cpu.rom[oamAddress + 1] - 8;
-			int tileIndex = cpu.rom[oamAddress + 2];
-			int attributes = cpu.rom[oamAddress + 3];
+		for (SpriteInfo sprite : spritesOnLine) {
+			int spriteX = sprite.x;
+			int spriteY = sprite.y;
+			int tileIndex = sprite.tile;
+			int attributes = sprite.attr;
 			
 			boolean flipY = (attributes & 0x40) != 0;
 			boolean flipX = (attributes & 0x20) != 0;
 			boolean priority = (attributes & 0x80) != 0;
-			int palette = (attributes & 0x10) != 0 ? cpu.rom[REG_OBP1] : cpu.rom[REG_OBP0];
+			int palette = (attributes & 0x10) != 0 ? cpu.getMem(REG_OBP1) : cpu.getMem(REG_OBP0);
 			
 			if (spriteHeight == 16) {
 				tileIndex &= 0xFE;
@@ -393,8 +381,8 @@ public class Gpu {
 			}
 			
 			int tileAddress = 0x8000 + tileIndex * 16 + tileY * 2;
-			int data1 = cpu.rom[tileAddress];
-			int data2 = cpu.rom[tileAddress + 1];
+			int data1 = cpu.getMem(tileAddress);
+			int data2 = cpu.getMem(tileAddress + 1);
 			
 			for (int pixelX = 0; pixelX < 8; pixelX++) {
 				int x = spriteX + pixelX;
@@ -406,10 +394,10 @@ public class Gpu {
 				if (colorNum == 0) continue;
 				
 				// Priority: if bit 7 is set, sprite is hidden by BG colors 1, 2, 3
-				if (priority && bgPixelColorIndex[lineOffset + x] != 0) continue;
+				if (priority && bgPixelColorIndex[x][line] != 0) continue;
 				
 				int color = (palette >> (colorNum * 2)) & 0x03;
-				pixelData[lineOffset + x] = COLORS[color];
+				pixelData[x][line] = COLORS[color];
 			}
 		}
 	}
@@ -420,11 +408,11 @@ public class Gpu {
 	public void doDMATransfer(int sourceHigh) {
 		int sourceAddress = sourceHigh << 8;
 		for (int i = 0; i < 160; i++) {
-			cpu.rom[0xFE00 + i] = cpu.rom[sourceAddress + i];
+			cpu.setMem(0xFE00 + i, cpu.getMem(sourceAddress + i));
 		}
 	}
 
-	public int[] getPixelData() {
+	public int[][] getPixelData() {
 		return pixelData;
 	}
 }

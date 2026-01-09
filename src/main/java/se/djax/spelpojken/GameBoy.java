@@ -156,6 +156,10 @@ public class GameBoy {
 			// Check for interrupts that can wake from halt
 			int cycles = interrupts.handleInterrupts();
 			if (cycles > 0) {
+				// Woken up by interrupt
+				// If IME was false, the interrupt handler will have returned 20 cycles
+				// but pc will NOT have changed if ime was false (wait, handleInterrupts only returns 20 if ime is true)
+				// Re-reading handleInterrupts...
 				return cycles;
 			}
 			return 4;
@@ -166,6 +170,7 @@ public class GameBoy {
 		if (interruptCycles > 0) {
 			timer.update(interruptCycles);
 			gpu.exec(interruptCycles);
+			// IME is already updated inside handleInterrupts (set to false)
 			return interruptCycles;
 		}
 
@@ -185,16 +190,14 @@ public class GameBoy {
 		apu.exec(cycles);
 
 		// Notify listeners
-		if (!listeners.isEmpty()) {
-			for (int i = 0; i < listeners.size(); i++) {
-				listeners.get(i).onExecution();
-			}
+		for (InstructionListener listener : listeners) {
+			listener.onExecution();
 		}
 
 		// Disable boot rom when 0xFF50 is written to
-		if (cpu.rom[0xFF50] == 1) {
+		if (cpu.getMem(0xFF50) == 1) {
 			cpu.loadRom(rawRomData, null);
-			cpu.rom[0xFF50] = 0;
+			cpu.setMem(0xFF50, (short) 0);
 			LOG.info("Boot rom disabled");
 		}
 		
@@ -207,83 +210,89 @@ public class GameBoy {
 	public void writeMem(int address, short value) {
 		address &= 0xFFFF;
 		
-		switch (address >> 12) {
-			case 0x0: case 0x1: case 0x2: case 0x3:
-			case 0x4: case 0x5: case 0x6: case 0x7:
-				mbc.writeRom(address, value);
-				return;
-			case 0x8: case 0x9:
-				cpu.rom[address] = value;
-				return;
-			case 0xA: case 0xB:
-				mbc.writeRam(address, value);
-				return;
-			case 0xC: case 0xD:
-				cpu.rom[address] = value;
-				return;
-			case 0xE:
-				cpu.rom[address - 0x2000] = value;
-				return;
-			case 0xF:
-				if (address >= 0xFE00 && address < 0xFEA0) {
-					cpu.rom[address] = value;
-					return;
-				}
-				if (address >= 0xFF00) {
-					// DMA transfer
-					if (address == 0xFF46) {
-						cpu.rom[address] = value;
-						gpu.doDMATransfer(value);
-						return;
-					}
-
-					// STAT register
-					if (address == 0xFF41) {
-						short currentStat = cpu.rom[0xFF41];
-						cpu.rom[address] = (short) (0x80 | (value & 0x78) | (currentStat & 0x07));
-						return;
-					}
-
-					// Joypad register
-					if (address == Joypad.JOYPAD_REGISTER) {
-						joypad.write(value);
-						return;
-					}
-
-					// Serial port (Blargg's test output)
-					if (address == 0xFF01) {
-						cpu.rom[address] = value;
-						return;
-					}
-					if (address == 0xFF02 && value == 0x81) {
-						System.out.print((char) cpu.rom[0xFF01]);
-						cpu.rom[0xFF02] = 0x01;
-						return;
-					}
-					
-					// DIV register - any write resets it
-					if (address == Timer.DIV_REGISTER) {
-						timer.resetDIV();
-						return;
-					}
-					
-					// TAC register - reset timer counter
-					if (address == Timer.TAC_REGISTER) {
-						cpu.rom[address] = value;
-						timer.resetTimerCounter();
-						return;
-					}
-					
-					// NR10 - NR52 (APU)
-					if (address >= 0xFF10 && address <= 0xFF3F) {
-						cpu.rom[address] = value;
-						apu.writeRegister(address, value);
-						return;
-					}
-				}
-				cpu.rom[address] = value;
-				return;
+		// DMA transfer
+		if (address == 0xFF46) {
+			cpu.setRawMem(address, value);
+			gpu.doDMATransfer(value);
+			return;
 		}
+
+		// ROM area - MBC control
+		if (address < 0x8000) {
+			mbc.writeRom(address, value);
+			return;
+		}
+
+		// VRAM
+		if (address >= 0x8000 && address < 0xA000) {
+			cpu.setRawMem(address, value);
+			return;
+		}
+		
+		// External RAM
+		if (address >= 0xA000 && address < 0xC000) {
+			mbc.writeRam(address, value);
+			return;
+		}
+		
+		// WRAM
+		if (address >= 0xC000 && address < 0xE000) {
+			cpu.setRawMem(address, value);
+			return;
+		}
+
+		// Echo RAM (0xE000-0xFDFF mirrors 0xC000-0xDDFF)
+		if (address >= 0xE000 && address < 0xFE00) {
+			cpu.setRawMem(address - 0x2000, value);
+			return;
+		}
+
+		// STAT register
+		if (address == 0xFF41) {
+			short currentStat = cpu.getRawMem(0xFF41);
+			cpu.setRawMem(address, (short) (0x80 | (value & 0x78) | (currentStat & 0x07)));
+			return;
+		}
+
+		// Joypad register
+		if (address == Joypad.JOYPAD_REGISTER) {
+			joypad.write(value);
+			return;
+		}
+
+		// Serial port (Blargg's test output)
+		if (address == 0xFF01) {
+			cpu.setRawMem(address, value);
+			return;
+		}
+		if (address == 0xFF02 && value == 0x81) {
+			System.out.print((char) cpu.getRawMem(0xFF01));
+			cpu.setRawMem(0xFF02, (short) 0x01);
+			return;
+		}
+		
+		// DIV register - any write resets it
+		if (address == Timer.DIV_REGISTER) {
+			timer.resetDIV();
+			return;
+		}
+		
+		// TAC register - reset timer counter
+		if (address == Timer.TAC_REGISTER) {
+			cpu.setRawMem(address, value);
+			timer.resetTimerCounter();
+			return;
+		}
+		
+		// NR10 - NR52 (APU)
+		if (address >= 0xFF10 && address <= 0xFF3F) {
+			cpu.setRawMem(address, value);
+			apu.writeRegister(address, value);
+			return;
+		}
+
+		// Normal memory write
+		cpu.setRawMem(address, value);
 	}
 
 	/**
@@ -292,23 +301,23 @@ public class GameBoy {
 	public short readMem(int address) {
 		address &= 0xFFFF;
 
-		switch (address >> 12) {
-			case 0xA: case 0xB:
-				return mbc.readRam(address);
-			case 0xE:
-				return cpu.rom[address - 0x2000];
-			case 0xF:
-				if (address >= 0xFE00 && address < 0xFEA0) {
-					return cpu.rom[address];
-				}
-				if (address == Joypad.JOYPAD_REGISTER) {
-					return joypad.read();
-				}
-				if (address >= 0xFEA0 && address < 0xFF00) return 0xFF;
-				return cpu.rom[address];
-			default:
-				return cpu.rom[address];
+		// External RAM
+		if (address >= 0xA000 && address < 0xC000) {
+			return mbc.readRam(address);
 		}
+
+		// Echo RAM
+		if (address >= 0xE000 && address < 0xFE00) {
+			return cpu.getRawMem(address - 0x2000);
+		}
+		
+		// Joypad register
+		if (address == Joypad.JOYPAD_REGISTER) {
+			return joypad.read();
+		}
+		
+		// Normal memory read
+		return cpu.getRawMem(address);
 	}
 
 	public void addListener(InstructionListener listener) {

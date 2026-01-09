@@ -3,26 +3,22 @@ package se.djax.spelpojken.form;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.BufferUtils;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import se.djax.spelpojken.GameBoy;
 import se.djax.spelpojken.Gpu;
 import se.djax.spelpojken.Joypad;
 
-import java.nio.IntBuffer;
-
 public class MainForm extends ApplicationAdapter {
 
 	private final GameBoy gameBoy;
 
-	private SpriteBatch batch;
-	private Texture texture;
-	private Pixmap pixmap;
-	private IntBuffer pixelBuffer;
+	ShapeRenderer shapeRenderer;
+	OrthographicCamera camera;
 
 	public MainForm(GameBoy gameBoy) {
 		this.gameBoy = gameBoy;
@@ -31,10 +27,11 @@ public class MainForm extends ApplicationAdapter {
 	@Override
 	public void create() {
 		gameBoy.getApu().initAudio();
-		batch = new SpriteBatch();
-		pixmap = new Pixmap(Gpu.WIDTH, Gpu.HEIGHT, Pixmap.Format.RGBA8888);
-		texture = new Texture(pixmap);
-		pixelBuffer = BufferUtils.newIntBuffer(Gpu.WIDTH * Gpu.HEIGHT);
+		shapeRenderer = new ShapeRenderer();
+		camera = new OrthographicCamera(Gpu.WIDTH, Gpu.HEIGHT);
+		camera.translate(camera.viewportWidth / 2, camera.viewportHeight / 2);
+		camera.update();
+		shapeRenderer.setProjectionMatrix(camera.combined);
 	}
 
 	@Override
@@ -43,23 +40,21 @@ public class MainForm extends ApplicationAdapter {
 		handleInput();
 		gameBoy.runFrame();
 
-		Gdx.gl.glClearColor(0, 0, 0, 1);
+		Gdx.gl.glClearColor(0, 1, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-		int[] pixelData = gameBoy.getGpu().getPixelData();
-		
-		// Update texture efficiently
-		pixelBuffer.clear();
-		pixelBuffer.put(pixelData);
-		pixelBuffer.flip();
-		
-		pixmap.getPixels().asIntBuffer().put(pixelBuffer);
-		texture.draw(pixmap, 0, 0);
+		shapeRenderer.begin(ShapeType.Filled);
 
-		batch.begin();
-		// Draw texture scaled to window size
-		batch.draw(texture, 0, Gdx.graphics.getHeight(), Gdx.graphics.getWidth(), -Gdx.graphics.getHeight());
-		batch.end();
+		int pixelData[][] = gameBoy.getGpu().getPixelData();
+
+		for (int x = 0; x < pixelData.length; x++) {
+			for (int y = 0; y < pixelData[x].length; y++) {
+				int val = pixelData[x][y];
+				shapeRenderer.setColor(((val >> 24) & 0xFF) / 255f, ((val >> 16) & 0xFF) / 255f, ((val >> 8) & 0xFF) / 255f, (val & 0xFF) / 255f);
+				shapeRenderer.rect(x, Gpu.HEIGHT - y - 1, 1, 1);
+			}
+		}
+		shapeRenderer.end();
 	}
 
 	private void handleInput() {
@@ -79,13 +74,6 @@ public class MainForm extends ApplicationAdapter {
 		} else if (!Gdx.input.isKeyPressed(gdxKey)) {
 			gameBoy.releaseButton(gbButton);
 		}
-	}
-	
-	@Override
-	public void dispose() {
-		batch.dispose();
-		texture.dispose();
-		pixmap.dispose();
 	}
 
 }
