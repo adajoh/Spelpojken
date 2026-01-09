@@ -7,7 +7,7 @@ Detta är ett hobbyprojekt för att lära sig om Game Boy-hårdvara.
 ## Status - Blargg's Test ROMs
 | Test | Status | Kommentar |
 | :--- | :--- | :--- |
-| `cpu_instrs.gb` | **PASS** | Alla instruktioner utför rätt logik. |
+| `cpu_instrs.gb` | **PASS** | Alla instruktioner utför rätt logik. Verifierat med automatiserat test. |
 | `instr_timing.gb` | **FAIL** | Timer-implementeringen är inte tillräckligt exakt. |
 | `mem_timing.gb` | **FAIL** | Minnesåtkomst är inte cykel-synkroniserad. |
 
