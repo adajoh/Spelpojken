@@ -39,5 +39,8 @@ Detta är ett hobbyprojekt för att lära sig om Game Boy-hårdvara.
 ### 6. Prestanda
 * [x] Implementera frame limiter (59.73 FPS) för korrekt hastighet.
 
+## Tekniska Uppdateringar
+* [x] Uppgraderat Gradle från 7.6 till 8.12 för bättre byggprestanda och kompatibilitet.
+
 ---
 *Status och framsteg loggas löpande i detta dokument.*
