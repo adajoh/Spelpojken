@@ -16,7 +16,6 @@ public class Gpu {
 	private static final int CYCLES_OAM_SEARCH = 80;      // Mode 2
 	private static final int CYCLES_PIXEL_TRANSFER = 172; // Mode 3
 	private static final int CYCLES_HBLANK = 204;         // Mode 0
-	private static final int CYCLES_PER_SCANLINE = 456;   // Total per line
 	private static final int CYCLES_VBLANK_LINE = 456;    // Mode 1 (10 lines)
 
 	// LCD modes
@@ -32,7 +31,6 @@ public class Gpu {
 	private static final int REG_SCX = 0xFF43;   // Scroll X
 	private static final int REG_LY = 0xFF44;    // Current Scanline
 	private static final int REG_LYC = 0xFF45;   // LY Compare
-	private static final int REG_DMA = 0xFF46;   // DMA Transfer
 	private static final int REG_BGP = 0xFF47;   // BG Palette
 	private static final int REG_OBP0 = 0xFF48;  // Object Palette 0
 	private static final int REG_OBP1 = 0xFF49;  // Object Palette 1
@@ -334,7 +332,7 @@ public class Gpu {
 				this.index = i; this.x = x; this.y = y; this.tile = t; this.attr = a;
 			}
 		}
-		java.util.List<SpriteInfo> spritesOnLine = new java.util.ArrayList<>();
+		List<SpriteInfo> spritesOnLine = new ArrayList<>();
 		
 		for (int sprite = 0; sprite < 40; sprite++) {
 			int oamAddress = 0xFE00 + sprite * 4;

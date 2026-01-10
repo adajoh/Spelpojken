@@ -41,6 +41,7 @@ Detta är ett hobbyprojekt för att lära sig om Game Boy-hårdvara.
 
 ## Tekniska Uppdateringar
 * [x] Uppgraderat Gradle från 7.6 till 8.12 för bättre byggprestanda och kompatibilitet.
+* [x] Rensat upp oanvända variabler, konstanter och metoder för att förbättra kodkvalitén.
 
 ---
 *Status och framsteg loggas löpande i detta dokument.*

@@ -26,7 +26,6 @@ public class GameBoy {
 	private Joypad joypad;
 	private Apu apu;
 	private MBC mbc;
-	private File romFile;
 	private short[] fullRomData;
 	private byte[] rawRomData;
 
@@ -132,7 +131,6 @@ public class GameBoy {
 	}
 
 	public void loadRom(File file) {
-		romFile = file;
 		try {
 			byte[] data = Files.readAllBytes(file.toPath());
 			loadRom(data);

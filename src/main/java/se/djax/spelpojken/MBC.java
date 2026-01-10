@@ -226,12 +226,4 @@ public class MBC {
 			externalRam[offset] = value;
 		}
 	}
-
-	public MBCType getType() {
-		return type;
-	}
-
-	public boolean hasRAM() {
-		return ramSize > 0;
-	}
 }
