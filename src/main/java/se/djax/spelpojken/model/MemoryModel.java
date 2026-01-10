@@ -17,7 +17,6 @@ public class MemoryModel extends AbstractTableModel implements InstructionListen
 
 	@SuppressWarnings("serial")
 	public class MemoryModelRenderer extends DefaultTableCellRenderer {
-		private static final long serialVersionUID = 1L;
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
 				int row, int column) {

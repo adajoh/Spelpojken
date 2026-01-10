@@ -20,16 +20,9 @@ public class Cpu {
 	public interface MemoryBus {
 		short read(int address);
 		void write(int address, short value);
-		void tick(int cycles);
 	}
 
 	private MemoryBus memoryBus;
-
-	public void tick(int cycles) {
-		if (memoryBus != null) {
-			memoryBus.tick(cycles);
-		}
-	}
 
 	public short a;
 	public short b;
