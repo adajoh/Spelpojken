@@ -28,6 +28,7 @@ public class GameBoy {
 	private MBC mbc;
 	private short[] fullRomData;
 	private byte[] rawRomData;
+	private int cyclesTicked = 0;
 
 	public GameBoy() {
 		listeners = new ArrayList<>();
@@ -45,14 +46,28 @@ public class GameBoy {
 		cpu.setMemoryBus(new Cpu.MemoryBus() {
 			@Override
 			public short read(int address) {
+				tick(4);
 				return readMem(address);
 			}
 
 			@Override
 			public void write(int address, short value) {
+				tick(4);
 				writeMem(address, value);
 			}
+
+			@Override
+			public void tick(int cycles) {
+				GameBoy.this.tick(cycles);
+			}
 		});
+	}
+
+	public void tick(int cycles) {
+		timer.update(cycles);
+		gpu.exec(cycles);
+		apu.exec(cycles);
+		cyclesTicked += cycles;
 	}
 
 	public void loadRom(byte[] data) {
@@ -148,16 +163,11 @@ public class GameBoy {
 		// Check if halted
 		if (interrupts.isHalted()) {
 			// Still update timer and GPU while halted
-			timer.update(4);
-			gpu.exec(4);
+			tick(4);
 			
 			// Check for interrupts that can wake from halt
 			int cycles = interrupts.handleInterrupts();
 			if (cycles > 0) {
-				// Woken up by interrupt
-				// If IME was false, the interrupt handler will have returned 20 cycles
-				// but pc will NOT have changed if ime was false (wait, handleInterrupts only returns 20 if ime is true)
-				// Re-reading handleInterrupts...
 				return cycles;
 			}
 			return 4;
@@ -166,9 +176,6 @@ public class GameBoy {
 		// Handle pending interrupts
 		int interruptCycles = interrupts.handleInterrupts();
 		if (interruptCycles > 0) {
-			timer.update(interruptCycles);
-			gpu.exec(interruptCycles);
-			// IME is already updated inside handleInterrupts (set to false)
 			return interruptCycles;
 		}
 
@@ -176,16 +183,14 @@ public class GameBoy {
 		interrupts.updateIME();
 
 		// Execute next instruction
-		int cycles = opcodes.exec();
+		cyclesTicked = 0;
+		int totalCycles = opcodes.exec();
 		
-		// Update timer
-		timer.update(cycles);
-		
-		// Update GPU
-		gpu.exec(cycles);
-		
-		// Update APU
-		apu.exec(cycles);
+		// Fill remaining cycles if instruction didn't tick enough
+		int remaining = totalCycles - cyclesTicked;
+		if (remaining > 0) {
+			tick(remaining);
+		}
 
 		// Notify listeners
 		for (InstructionListener listener : listeners) {
@@ -199,7 +204,7 @@ public class GameBoy {
 			LOG.info("Boot rom disabled");
 		}
 		
-		return cycles;
+		return totalCycles;
 	}
 
 	/**
@@ -275,10 +280,10 @@ public class GameBoy {
 			return;
 		}
 		
-		// TAC register - reset timer counter
+		// TAC register - handle potential falling edge
 		if (address == Timer.TAC_REGISTER) {
 			cpu.setRawMem(address, value);
-			timer.resetTimerCounter();
+			timer.onTACWrite();
 			return;
 		}
 		
